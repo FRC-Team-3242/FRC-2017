@@ -14,6 +14,8 @@ public class Robot extends IterativeRobot {
 	final String customAuto = "My Auto";
 	String autoSelected;
 	SendableChooser<String> chooser = new SendableChooser<>();
+	
+	VisionServer vision;
 
 	
 	@Override
@@ -21,6 +23,7 @@ public class Robot extends IterativeRobot {
 		chooser.addDefault("Default Auto", defaultAuto);
 		chooser.addObject("My Auto", customAuto);
 		SmartDashboard.putData("Auto choices", chooser);
+		vision = new VisionServer();
 	}
 	
 	@Override
@@ -46,11 +49,13 @@ public class Robot extends IterativeRobot {
 
 	@Override
 	public void teleopPeriodic() {
+		
 	}
 
 	
 	@Override
 	public void testPeriodic() {
+		
 	}
 }
 
