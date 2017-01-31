@@ -45,11 +45,8 @@ public class Robot extends IterativeRobot {
 		
 		drive = new RobotDrive(new CANTalon(0), new CANTalon(1), new CANTalon(2), new CANTalon(3));
 		
-		genStatus = new PigeonImu.GeneralStatus();
-		
 		imu = new PigeonImu(0);
 		
-		imu.GetGeneralStatus(genStatus);
 		
 		turnOne = false;
 		turnTwo = false;
@@ -66,6 +63,9 @@ public class Robot extends IterativeRobot {
 
 	@Override
 	public void autonomousPeriodic() {
+		imu.GetGeneralStatus(new PigeonImu.GeneralStatus());
+		double currentAngle = imu.GetFusedHeading(new PigeonImu.FusionStatus());
+		
 		switch (autoSelected) {
 		case rightGearAuto:
 			//go forward 12 inches
@@ -73,8 +73,8 @@ public class Robot extends IterativeRobot {
 				drive.mecanumDrive_Cartesian(0, 0.75, 0, 0); // go forward at 75% speed
 				break;
 			}
-			imu.GetYawPitchRoll(ypr);
-			if (ypr[0] <= 30){ // turn 30 degrees
+			
+			if (currentAngle <= 30){ // turn 30 degrees
 				drive.mecanumDrive_Cartesian(0, 0, 0.75, 0); // rotate right at 75% speed
 				break;
 			}
@@ -88,7 +88,7 @@ public class Robot extends IterativeRobot {
 				break;
 			}
 			
-			if (ypr[0] < 295 || ypr[0] > 305 && !turnTwo){
+			if (currentAngle < 295 || currentAngle > 305 && !turnTwo){ // rotate to around 300 degrees
 				drive.mecanumDrive_Cartesian(0, 0, -0.75, 0); // rotate left at 75% speed
 				break;
 			}
@@ -98,7 +98,7 @@ public class Robot extends IterativeRobot {
 				driveEncoder.reset();
 			}
 			
-			if (driveEncoder.getDistance() < 20 && turnTwo){
+			if (driveEncoder.getDistance() < 42 && turnTwo){
 				drive.mecanumDrive_Cartesian(0, 0.75, 0, 0); // go forward at 75% speed
 				break;
 			}
@@ -111,8 +111,7 @@ public class Robot extends IterativeRobot {
 				drive.mecanumDrive_Cartesian(0, 0.75, 0, 0); // go forward at 75% speed
 				break;
 			}
-			imu.GetYawPitchRoll(ypr);
-			if (ypr[0] <= 60){ // turn 60 degrees
+			if (currentAngle <= 60){ // turn 60 degrees
 				drive.mecanumDrive_Cartesian(0, 0, 0.75, 0); // rotate at 75% speed
 				break;
 			}
