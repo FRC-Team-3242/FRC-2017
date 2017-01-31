@@ -22,7 +22,8 @@ public class Robot extends IterativeRobot {
 	final String rightGearAuto = "Right Gear";
 	String autoSelected;
 	SendableChooser<String> chooser = new SendableChooser<>();
-	
+
+	VisionServer vision;
 	Encoder driveEncoder;
 	RobotDrive drive;
 	PigeonImu imu;
@@ -51,6 +52,7 @@ public class Robot extends IterativeRobot {
 		turnOne = false;
 		turnTwo = false;
 		
+		vision = new VisionServer();
 	}
 	
 	@Override
@@ -142,11 +144,13 @@ public class Robot extends IterativeRobot {
 
 	@Override
 	public void teleopPeriodic() {
+		
 	}
 
 	
 	@Override
 	public void testPeriodic() {
+		
 	}
 }
 
