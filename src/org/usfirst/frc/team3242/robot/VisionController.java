@@ -1,27 +1,36 @@
 package org.usfirst.frc.team3242.robot;
 
+import com.ctre.PigeonImu;
+
 import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.Timer;
 
 public class VisionController {
 	
 	private VisionServer vision;
+	private PigeonImu gyro;
 	private RobotDrive drive;
 	
-	//tolerance within x%
-	private double xTolerance = 3;
-	private double yTolerance = 2;
+	//both tolerances within 0.5%
+	private final double xTolerance = 6.4;
+	private final double yTolerance = 3.6;
+	private final double gyroTolerance = 1.8;
 	
-	private double xMax = 1280;
-	private double yMax = 720;
+	private final double xMax = 1280;
+	private final double yMax = 720;
 	
 	//center point of ideal lift
-	private double xLift = 400;
-	private double yLift = 600;
+	private final double xLift = 400;
+	private final double yLift = 600;
+	
+	//ideal angles for lifts
+	private final double angleA = 0;
+	private final double angleB = 120;
+	private final double angleC = 240;
 	
 	//center point of boiler
-	private double xBoiler = 700;
-	private double yBoiler = 100;
+	private final double xBoiler = 700;
+	private final double yBoiler = 100;
 	
 	/**
 	 * integer for state machine
@@ -32,12 +41,13 @@ public class VisionController {
 	private int autoState;
 	private Timer autoTimer;
 	
-	public VisionController(VisionServer vision, RobotDrive drive){
+	public VisionController(VisionServer vision, RobotDrive drive, PigeonImu gyro){
 		this.vision = vision;
 		this.drive = drive;
 		autoState = 0;
 		autoTimer = new Timer();
 		autoTimer.start();
+		this.gyro = gyro;
 	}
 	
 	public void startLiftTracking(){
@@ -52,6 +62,17 @@ public class VisionController {
 		autoState = 0;
 	}
 	
+	public int getAutoState(){
+		return autoState;
+	}
+	
+	private boolean linedUpToLiftX(){
+		return numberInTolerance(vision.getX(),xLift,xTolerance);
+	}
+	private boolean linedUpToLiftY(){
+		return numberInTolerance(vision.getY(),yLift,yTolerance);
+	}
+
 	public boolean linedUpToBoiler(){
 		return linedUpToBoilerX() && linedUpToBoilerY();
 	}
@@ -60,13 +81,6 @@ public class VisionController {
 	}
 	private boolean linedUpToBoilerY(){
 		return numberInTolerance(vision.getY(),yBoiler,yTolerance);
-	}
-	
-	private boolean linedUpToLiftX(){
-		return numberInTolerance(vision.getX(),xLift,xTolerance);
-	}
-	private boolean linedUpToLiftY(){
-		return numberInTolerance(vision.getY(),yLift,yTolerance);
 	}
 	
 	/**
@@ -80,9 +94,13 @@ public class VisionController {
 		case(0):
 			//do nothing
 			break;
+		
 		case(100):
 			//start lift sequence
+			//go to closest angle
+			
 			break;
+		
 		case(200):
 			//start boiler sequence, center horizontally
 			if(!linedUpToBoilerX()){
@@ -107,7 +125,7 @@ public class VisionController {
 			}
 			break;
 		case(202):
-			//ensure distance
+			//go to ideal distance
 			if(!linedUpToBoilerY()){
 				double y = pLoop(vision.getY(),yBoiler,1,yMax);
 				drive.mecanumDrive_Cartesian(0, y, 0, 0);
@@ -118,7 +136,16 @@ public class VisionController {
 			}
 			break;
 		case(203):
-			//TODO ...
+			//ensure stability of distance
+			drive.mecanumDrive_Cartesian(0, 0, 0, 0);
+			if(autoTimer.get() > 0.1){
+				if(linedUpToBoilerX()){
+					autoState = 0;
+				}else{
+					//try again
+					autoState = 202;
+				}
+			}
 			break;
 		}
 	}
