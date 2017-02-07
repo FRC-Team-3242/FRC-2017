@@ -39,12 +39,14 @@ public class VisionController {
 	 * 200-299	: boiler
 	 */
 	private int autoState;
+	private double closestIdealAngle;
 	private Timer autoTimer;
 	
 	public VisionController(VisionServer vision, RobotDrive drive, PigeonImu gyro){
 		this.vision = vision;
 		this.drive = drive;
 		autoState = 0;
+		closestIdealAngle = 0;
 		autoTimer = new Timer();
 		autoTimer.start();
 		this.gyro = gyro;
@@ -96,8 +98,7 @@ public class VisionController {
 			break;
 		
 		case(100):
-			//start lift sequence
-			//go to closest angle
+			//start lift sequence, find closest ideal angle
 			
 			break;
 		
@@ -155,12 +156,12 @@ public class VisionController {
 	 * @param sensor current detected tape in pixels
 	 * @param target ideal position for tape in pixels
 	 * @param maxSpeed how quickly to correct for error. high values could be unstable
-	 * @param maxPixel maximum pixel value (xMax or yMax), used to normalize
+	 * @param maxSensor maximum sensor value (xMax or yMax), used to normalize
 	 * @return normalized output to give to motor controller
 	 */
-	private double pLoop(double sensor, double target, double maxSpeed, double maxPixel){
+	private double pLoop(double sensor, double target, double maxSpeed, double maxSensor){
 		double error = target - sensor;
-		double normalizedError = error / maxPixel;
+		double normalizedError = error / maxSensor;
 		return normalizedError * maxSpeed;
 	}
 
