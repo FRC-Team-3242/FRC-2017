@@ -55,8 +55,7 @@ public class Robot extends IterativeRobot {
 		controller = new Joystick(1);
 		
 		
-		turnOne = false;
-		turnTwo = false;
+
 		
 		vision = new VisionServer();
 	}
@@ -67,6 +66,9 @@ public class Robot extends IterativeRobot {
 		// autoSelected = SmartDashboard.getString("Auto Selector",
 		// defaultAuto);
 		System.out.println("Auto selected: " + autoSelected);
+		
+		turnOne = false;
+		turnTwo = false;
 	}
 
 	@Override
@@ -82,7 +84,7 @@ public class Robot extends IterativeRobot {
 				break;
 			}
 			
-			if (currentAngle <= 30){ // turn 30 degrees
+			if (currentAngle <= 30 && !turnOne){ // turn 30 degrees
 				drive.mecanumDrive_Cartesian(0, 0, 0.75, 0); // rotate right at 75% speed
 				break;
 			}
