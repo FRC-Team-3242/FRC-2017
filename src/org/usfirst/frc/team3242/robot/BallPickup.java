@@ -1,4 +1,8 @@
-protected class BallPickup{
+package org.usfirst.frc.team3242.robot;
+
+import com.ctre.CANTalon;
+
+public class BallPickup{
 	
 	private CANTalon pickup;
 	private CANTalon elevator;
@@ -14,13 +18,13 @@ protected class BallPickup{
 		return isEnabled;
 	}
 	
-	public void pickupBall(){
+	public void enable(){
 		pickup.set(1);
 		elevator.set(1); //Need to test speeds
 		isEnabled = true;
 	}
 	
-	public void stopPickup(){
+	public void disable(){
 		pickup.set(0);
 		elevator.set(0);
 		isEnabled = false;

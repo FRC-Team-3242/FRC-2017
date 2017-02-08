@@ -5,6 +5,7 @@ import com.ctre.CANTalon;
 import edu.wpi.first.wpilibj.CounterBase;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.IterativeRobot;
+import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -14,7 +15,7 @@ import com.ctre.PigeonImu.FusionStatus;
 /**
  * If you change the name of this class or the package after
  * creating this project, you must also update the manifest file in the resource
- * directory.
+ * directory.	
  */
 public class Robot extends IterativeRobot {
 	final String frontGearAuto = "Front Gear";
@@ -23,6 +24,9 @@ public class Robot extends IterativeRobot {
 	String autoSelected;
 	SendableChooser<String> chooser = new SendableChooser<>();
 
+	Shooter shooter;
+	BallPickup ballPickup;
+	Joystick controller;
 	VisionServer vision;
 	Encoder driveEncoder;
 	RobotDrive drive;
@@ -47,6 +51,8 @@ public class Robot extends IterativeRobot {
 		drive = new RobotDrive(new CANTalon(0), new CANTalon(1), new CANTalon(2), new CANTalon(3));
 		
 		imu = new PigeonImu(0);
+		
+		controller = new Joystick(1);
 		
 		
 		turnOne = false;
@@ -144,6 +150,28 @@ public class Robot extends IterativeRobot {
 
 	@Override
 	public void teleopPeriodic() {
+		drive.mecanumDrive_Cartesian(controller.getRawAxis(4), controller.getRawAxis(1), controller.getRawAxis(0), 0);
+		
+		if (controller.getRawButton(4) && !shooter.isEnabled()){
+			shooter.enable();
+			shooter.setRPM(5000); //make adjustable by smartdashboard?
+			
+		}
+		else if (controller.getRawButton(4) && shooter.isEnabled()){
+			shooter.disable();
+		}
+		shooter.elevate();
+		
+		if(controller.getRawButton(2) && !ballPickup.isEnabled()){
+			ballPickup.enable();
+		}
+		else if(controller.getRawButton(2) && ballPickup.isEnabled()){
+			ballPickup.disable();
+		}
+		
+		
+		
+
 		
 	}
 
