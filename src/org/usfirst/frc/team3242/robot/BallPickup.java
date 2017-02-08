@@ -1,4 +1,8 @@
-protected class BallPickup{
+package org.usfirst.frc.team3242.robot;
+
+import com.ctre.CANTalon;
+
+public class BallPickup{
 	
 	private CANTalon pickup;
 	private CANTalon elevator;
