@@ -22,6 +22,7 @@ public class Shooter {
 	private CANTalon elevator;
 	private Encoder encoder;
 	private double rpm;
+	private double speedTolerance;
 
 	/**
 	 * @param Motor controller for motor for shooter
@@ -64,10 +65,24 @@ public class Shooter {
 	}
 	
 	/**
+	 * @return the speedTolerance
+	 */
+	public double getSpeedTolerance() {
+		return speedTolerance;
+	}
+
+	/**
+	 * @param speedTolerance the speedTolerance to set (rpm)
+	 */
+	public void setSpeedTolerance(double speedTolerance) {
+		this.speedTolerance = speedTolerance;
+	}
+
+	/**
 	 * turns on elevator if the motor is up to speed (in a range of +-20)
 	 */
 	public void elevate(){
-		if (isEnabled && (getRPM() >= (rpm - 20) && getRPM() <= (rpm + 20))){ //calibrate range
+		if (isEnabled && (getRPM() >= (rpm - speedTolerance) && getRPM() <= (speedTolerance))){ //calibrate range
 			elevator.set(0.75); //need to test
 		}
 		else{

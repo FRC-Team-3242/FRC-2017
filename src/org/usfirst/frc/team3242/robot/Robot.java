@@ -53,6 +53,8 @@ public class Robot extends IterativeRobot {
 		imu = new PigeonImu(0);
 		
 		controller = new Joystick(1);
+		shooter = new Shooter(new CANTalon(1), new Encoder(0, 1, false, CounterBase.EncodingType.k4X), new CANTalon(1));
+		shooter.setSpeedTolerance(20);
 		
 		
 
