@@ -25,8 +25,8 @@ public class VisionController {
 	
 	//ideal angles for lifts
 	private final double angleA = 0;
-	private final double angleB = 120;
-	private final double angleC = 240;
+	private final double angleB = 300;
+	private final double angleC = 60;
 	
 	//center point of boiler
 	private final double xBoiler = 700;
@@ -41,6 +41,8 @@ public class VisionController {
 	private int autoState;
 	private double closestIdealAngle;
 	private Timer autoTimer;
+	int turningDirection;
+	double currentAngle;
 	
 	public VisionController(VisionServer vision, RobotDrive drive, PigeonImu gyro){
 		this.vision = vision;
@@ -50,6 +52,12 @@ public class VisionController {
 		autoTimer = new Timer();
 		autoTimer.start();
 		this.gyro = gyro;
+	}
+	
+	public double getNormalIMUAngle(){
+		gyro.GetGeneralStatus(new PigeonImu.GeneralStatus());
+		double currentAngle = gyro.GetFusedHeading(new PigeonImu.FusionStatus());
+		return Math.abs(currentAngle) % 360;
 	}
 	
 	public void startLiftTracking(){
@@ -84,6 +92,9 @@ public class VisionController {
 	private boolean linedUpToBoilerY(){
 		return numberInTolerance(vision.getY(),yBoiler,yTolerance);
 	}
+	public boolean correctPegAngle(){
+		return numberInTolerance(getNormalIMUAngle(), closestIdealAngle, gyroTolerance);
+	}
 	
 	/**
 	 * should be called ONCE per iteration at end of iteration
@@ -101,8 +112,53 @@ public class VisionController {
 			//start lift sequence, find closest ideal angle
 			
 			break;
-		
 		case(200):
+			//select nearest ideal angle
+			
+			currentAngle = getNormalIMUAngle();
+			if (currentAngle < 30 && currentAngle > 0 || currentAngle < 0 && currentAngle > 330){
+				closestIdealAngle = angleA;
+			}
+			else if (currentAngle < 330 && currentAngle > 270){
+				closestIdealAngle = angleB;
+			}
+			else if (currentAngle < 90 && currentAngle > 30){
+				closestIdealAngle = angleC;
+			}
+			autoState = 201;
+			break;
+		case(201):
+			//adjust to nearest angle
+			currentAngle = getNormalIMUAngle();
+			if (!correctPegAngle()){
+				if (Math.abs(closestIdealAngle - currentAngle)<180){
+					turningDirection = -1;
+				}
+				else if (Math.abs(closestIdealAngle - currentAngle)>=180){
+					turningDirection = 1;
+				}
+				
+				drive.mecanumDrive_Cartesian(0, 0, turningDirection * Math.abs(pLoop(currentAngle, closestIdealAngle, 1, 60)), 0);
+			}
+			else {
+				drive.mecanumDrive_Cartesian(0, 0, 0, 0);
+				autoTimer.reset();
+				autoState = 202;
+			}
+			
+		case(202):
+			//ensure stability of peg angle positioning
+			drive.mecanumDrive_Cartesian(0, 0, 0, 0);
+			if(autoTimer.get() > 0.1){
+				if(linedUpToBoilerX()){
+					autoState = 203;
+				}else{
+					//try again
+					autoState = 201;
+				}
+			}
+			break;
+		case(203):
 			//start boiler sequence, center horizontally
 			if(!linedUpToBoilerX()){
 				double x = pLoop(vision.getX(),xBoiler,1,xMax);
@@ -110,22 +166,22 @@ public class VisionController {
 			}else{
 				drive.mecanumDrive_Cartesian(0, 0, 0, 0);
 				autoTimer.reset();
-				autoState = 201;
+				autoState = 204;
 			}
 			break;
-		case(201):
+		case(204):
 			//ensure stability of horizontal centering
 			drive.mecanumDrive_Cartesian(0, 0, 0, 0);
 			if(autoTimer.get() > 0.1){
 				if(linedUpToBoilerX()){
-					autoState = 202;
+					autoState = 205;
 				}else{
 					//try again
-					autoState = 200;
+					autoState = 203;
 				}
 			}
 			break;
-		case(202):
+		case(205):
 			//go to ideal distance
 			if(!linedUpToBoilerY()){
 				double y = pLoop(vision.getY(),yBoiler,1,yMax);
@@ -133,10 +189,10 @@ public class VisionController {
 			}else{
 				drive.mecanumDrive_Cartesian(0, 0, 0, 0);
 				autoTimer.reset();
-				autoState = 203;
+				autoState = 206;
 			}
 			break;
-		case(203):
+		case(206):
 			//ensure stability of distance
 			drive.mecanumDrive_Cartesian(0, 0, 0, 0);
 			if(autoTimer.get() > 0.1){
@@ -144,7 +200,7 @@ public class VisionController {
 					autoState = 0;
 				}else{
 					//try again
-					autoState = 202;
+					autoState = 205;
 				}
 			}
 			break;
@@ -152,10 +208,10 @@ public class VisionController {
 	}
 	
 	/**
-	 * 	Simple PID controller, with only a P term
+	 * 	Simple PID controller, with only a P term 
 	 * @param sensor current detected tape in pixels
 	 * @param target ideal position for tape in pixels
-	 * @param maxSpeed how quickly to correct for error. high values could be unstable
+	 * @param maxSpeed how quickly to correct for error. high values could be unstable. between 0 and 1.
 	 * @param maxSensor maximum sensor value (xMax or yMax), used to normalize
 	 * @return normalized output to give to motor controller
 	 */
@@ -164,6 +220,7 @@ public class VisionController {
 		double normalizedError = error / maxSensor;
 		return normalizedError * maxSpeed;
 	}
+	
 
 	/**
 	 * @param value this is the input
