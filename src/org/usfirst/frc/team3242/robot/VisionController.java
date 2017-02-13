@@ -131,14 +131,7 @@ public class VisionController {
 			//adjust to nearest angle
 			currentAngle = getNormalIMUAngle();
 			if (!correctPegAngle()){
-				if (Math.abs(closestIdealAngle - currentAngle)<180){
-					turningDirection = -1;
-				}
-				else if (Math.abs(closestIdealAngle - currentAngle)>=180){
-					turningDirection = 1;
-				}
-				
-				drive.mecanumDrive_Cartesian(0, 0, turningDirection * Math.abs(pLoop(currentAngle, closestIdealAngle, 1, 60)), 0);
+				drive.mecanumDrive_Cartesian(0, 0, turningDirection * pLoopAngle(currentAngle, closestIdealAngle, 1, 60), 0);
 			}
 			else {
 				drive.mecanumDrive_Cartesian(0, 0, 0, 0);
@@ -156,6 +149,7 @@ public class VisionController {
 					//try again
 					autoState = 201;
 				}
+				
 			}
 			break;
 		case(203):
@@ -219,6 +213,28 @@ public class VisionController {
 		double error = target - sensor;
 		double normalizedError = error / maxSensor;
 		return normalizedError * maxSpeed;
+	}
+	
+	public double pLoopAngle(double sensor, double target, double maxSpeed, double maxSensor){
+		
+		double error = 360 - sensor + target;
+		
+		if (Math.abs(closestIdealAngle - currentAngle)<180){
+			turningDirection = -1;
+		}
+		else if (Math.abs(closestIdealAngle - currentAngle)>=180){
+			turningDirection = 1;
+		}
+		
+		if (turningDirection == -1 && closestIdealAngle > currentAngle){
+			turningDirection *= -1;
+		}
+		else if (turningDirection == 1 && closestIdealAngle < currentAngle){
+			turningDirection *= -1;
+		}
+		
+		double normalizedError = error / maxSensor;
+		return normalizedError * maxSpeed * turningDirection;
 	}
 	
 

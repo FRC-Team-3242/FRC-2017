@@ -92,7 +92,6 @@ public class Robot extends IterativeRobot {
 			}
 			if (!turnOne){
 				turnOne = true;
-				driveEncoder.reset();
 			}
 
 			if (driveEncoder.getDistance() < 66.25 && turnOne){ // go forward 66.25 inches
@@ -107,7 +106,6 @@ public class Robot extends IterativeRobot {
 			
 			if (!turnTwo){
 				turnTwo = true;
-				driveEncoder.reset();
 			}
 			
 			if (driveEncoder.getDistance() < 42 && turnTwo){
@@ -129,7 +127,6 @@ public class Robot extends IterativeRobot {
 			}
 			if (!turnOne){
 				turnOne = true;
-				driveEncoder.reset();
 			}
 
 			if (driveEncoder.getDistance() < 25 && turnOne){
