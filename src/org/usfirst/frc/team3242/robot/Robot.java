@@ -37,6 +37,7 @@ public class Robot extends IterativeRobot {
 	boolean turnOne;
 	boolean turnTwo;
 	boolean readyToTurn;
+	int turnScalar;
 
 	
 	double[] ypr = new double[3];
