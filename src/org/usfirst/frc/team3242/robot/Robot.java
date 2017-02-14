@@ -1,16 +1,17 @@
 package org.usfirst.frc.team3242.robot;
 
 import com.ctre.CANTalon;
+import com.ctre.PigeonImu;
 
 import edu.wpi.first.wpilibj.CounterBase;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import com.ctre.PigeonImu;
-import com.ctre.PigeonImu.FusionStatus;
 
 /**
  * If you change the name of this class or the package after
@@ -36,6 +37,7 @@ public class Robot extends IterativeRobot {
 	boolean turnOne;
 	boolean turnTwo;
 	boolean readyToTurn;
+
 	
 	double[] ypr = new double[3];
 
@@ -52,14 +54,11 @@ public class Robot extends IterativeRobot {
 		
 		drive = new RobotDrive(new CANTalon(0), new CANTalon(1), new CANTalon(2), new CANTalon(3));
 		
-		imu = new PigeonImu(0);
+		imu = new PigeonImu(4);
 		
 		controller = new Joystick(1);
 		shooter = new Shooter(new CANTalon(1), new Encoder(0, 1, false, CounterBase.EncodingType.k4X), new CANTalon(1));
 		shooter.setSpeedTolerance(20);
-		
-		
-
 		
 		vision = new VisionServer();
 		visionController = new VisionController(vision, drive, imu);
@@ -71,7 +70,12 @@ public class Robot extends IterativeRobot {
 		// autoSelected = SmartDashboard.getString("Auto Selector",
 		// defaultAuto);
 		System.out.println("Auto selected: " + autoSelected);
-		
+		//with current setup, the turnScalar will mess up the inequalities
+		if(DriverStation.getInstance().getAlliance() == Alliance.Blue){
+			turnScalar = -1;
+		}else{
+			turnScalar = 1;
+		}
 		turnOne = false;
 		turnTwo = false;
 		readyToTurn = false;
@@ -188,17 +192,7 @@ public class Robot extends IterativeRobot {
 		}
 		shooter.elevate();
 		
-		if(controller.getRawButton(2) && !ballPickup.isEnabled()){
-			ballPickup.enable();
-		}
-		else if(controller.getRawButton(2) && ballPickup.isEnabled()){
-			ballPickup.disable();
-		}
-		
-		
-		
-
-		
+		ballPickup.set(controller.getRawButton(2));
 	}
 
 	
