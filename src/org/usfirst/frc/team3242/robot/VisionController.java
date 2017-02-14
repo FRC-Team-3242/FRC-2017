@@ -52,6 +52,7 @@ public class VisionController {
 		autoTimer = new Timer();
 		autoTimer.start();
 		this.gyro = gyro;
+		gyro.SetFusedHeading(360 * 32);
 	}
 	
 	public double getNormalIMUAngle(){
