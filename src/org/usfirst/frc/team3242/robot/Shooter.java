@@ -32,7 +32,8 @@ public class Shooter {
 		this.encoder = encoder;
 		this.shooter = shooter;
 		this.elevator = elevator;
-		this.encoder.setDistancePerPulse(1/1440); // so one rotation = one unit for rate
+		//40 pulses per rotation for a cimcoder
+		this.encoder.setDistancePerPulse(1/40); // so one rotation = one unit for rate
 		this.encoder.setPIDSourceType(PIDSourceType.kRate);
 		isEnabled = false;
 		pid = new PIDController(0.7, 0.01, 0, encoder, shooter); //need to enter PID values
@@ -57,7 +58,6 @@ public class Shooter {
 	public void setRPM(double rpm){
 		this.rpm = rpm / 60;
 		pid.setSetpoint(this.rpm);
-
 	}
 	/**
 	 * 
@@ -82,10 +82,10 @@ public class Shooter {
 	}
 
 	/**
-	 * turns on elevator if the motor is up to speed (in a range of +-20)
+	 * turns on elevator if the motor is up to speed (in a range of speed tolerance)
 	 */
 	public void elevate(){
-		if (isEnabled && (getRPM() >= (rpm - speedTolerance) && getRPM() <= (speedTolerance))){ //calibrate range
+		if (isEnabled && pid.onTarget()){ //calibrate range
 			elevator.set(0.75); //need to test
 		}
 		else{
