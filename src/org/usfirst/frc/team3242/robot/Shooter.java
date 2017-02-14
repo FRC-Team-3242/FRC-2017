@@ -22,6 +22,7 @@ public class Shooter {
 	private CANTalon elevator;
 	private Encoder encoder;
 	private double rpm;
+	private PIDController pid;
 	private double speedTolerance;
 
 	/**
@@ -34,9 +35,11 @@ public class Shooter {
 		this.encoder.setDistancePerPulse(1/1440); // so one rotation = one unit for rate
 		this.encoder.setPIDSourceType(PIDSourceType.kRate);
 		isEnabled = false;
+		pid = new PIDController(0.7, 0.01, 0, encoder, shooter); //need to enter PID values
+		pid.setPercentTolerance(5);
 	}
 
-	private PIDController pid = new PIDController(0, 0, 0, encoder, shooter); //need to enter PID values
+	
 	
 	
 	/**
