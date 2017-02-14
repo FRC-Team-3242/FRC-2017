@@ -28,12 +28,14 @@ public class Robot extends IterativeRobot {
 	BallPickup ballPickup;
 	Joystick controller;
 	VisionServer vision;
+	VisionController visionController;
 	Encoder driveEncoder;
 	RobotDrive drive;
 	PigeonImu imu;
 	PigeonImu.GeneralStatus genStatus;
 	boolean turnOne;
 	boolean turnTwo;
+	boolean readyToTurn;
 	
 	double[] ypr = new double[3];
 
@@ -60,6 +62,7 @@ public class Robot extends IterativeRobot {
 
 		
 		vision = new VisionServer();
+		visionController = new VisionController(vision, drive, imu);
 	}
 	
 	@Override
@@ -71,12 +74,12 @@ public class Robot extends IterativeRobot {
 		
 		turnOne = false;
 		turnTwo = false;
+		readyToTurn = false;
 	}
 
 	@Override
 	public void autonomousPeriodic() {
-		imu.GetGeneralStatus(new PigeonImu.GeneralStatus());
-		double currentAngle = imu.GetFusedHeading(new PigeonImu.FusionStatus());
+		double currentAngle = visionController.getNormalIMUAngle();
 		
 		switch (autoSelected) {
 		case rightGearAuto:
@@ -92,6 +95,7 @@ public class Robot extends IterativeRobot {
 			}
 			if (!turnOne){
 				turnOne = true;
+				driveEncoder.reset();
 			}
 
 			if (driveEncoder.getDistance() < 66.25 && turnOne){ // go forward 66.25 inches
@@ -106,13 +110,21 @@ public class Robot extends IterativeRobot {
 			
 			if (!turnTwo){
 				turnTwo = true;
+				driveEncoder.reset();
+				
 			}
 			
 			if (driveEncoder.getDistance() < 42 && turnTwo){
 				drive.mecanumDrive_Cartesian(0, 0.75, 0, 0); // go forward at 75% speed
 				break;
 			}
-			
+			if( driveEncoder.getDistance() > 42 && turnTwo && !readyToTurn){
+				readyToTurn = true;
+			}
+			if(readyToTurn){
+				visionController.startLiftTracking();
+			}
+			visionController.update();
 			// to_do: use auto gear placing function
 			break;
 		case leftGearAuto:
@@ -127,14 +139,27 @@ public class Robot extends IterativeRobot {
 			}
 			if (!turnOne){
 				turnOne = true;
+				driveEncoder.reset();
+				
 			}
 
 			if (driveEncoder.getDistance() < 25 && turnOne){
 				drive.mecanumDrive_Cartesian(0, 0.75, 0, 0); // go forward at 75% speed
+				break;
 			}
-			break;
 			
-			// to_do: use auto gear placing function
+			if (driveEncoder.getDistance() > 25 && !readyToTurn){
+				readyToTurn = true;
+			}
+			if(readyToTurn){
+				visionController.startLiftTracking();
+			}
+			
+			visionController.update();
+			
+			// to_do: use auto gear placing function (done?)
+			
+			break;
 			
 		case frontGearAuto:
 			default:

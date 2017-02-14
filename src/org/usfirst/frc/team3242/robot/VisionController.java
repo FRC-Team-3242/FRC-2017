@@ -44,6 +44,7 @@ public class VisionController {
 	int turningDirection;
 	double currentAngle;
 	
+	
 	public VisionController(VisionServer vision, RobotDrive drive, PigeonImu gyro){
 		this.vision = vision;
 		this.drive = drive;
@@ -109,11 +110,8 @@ public class VisionController {
 			//do nothing
 			break;
 		
+		
 		case(100):
-			//start lift sequence, find closest ideal angle
-			
-			break;
-		case(200):
 			//select nearest ideal angle
 			
 			currentAngle = getNormalIMUAngle();
@@ -126,9 +124,9 @@ public class VisionController {
 			else if (currentAngle < 90 && currentAngle > 30){
 				closestIdealAngle = angleC;
 			}
-			autoState = 201;
+			autoState = 101;
 			break;
-		case(201):
+		case(101):
 			//adjust to nearest angle
 			currentAngle = getNormalIMUAngle();
 			if (!correctPegAngle()){
@@ -137,23 +135,73 @@ public class VisionController {
 			else {
 				drive.mecanumDrive_Cartesian(0, 0, 0, 0);
 				autoTimer.reset();
-				autoState = 202;
+				autoState = 102;
 			}
-			
-		case(202):
+			break;
+		case(102):
 			//ensure stability of peg angle positioning
 			drive.mecanumDrive_Cartesian(0, 0, 0, 0);
 			if(autoTimer.get() > 0.1){
-				if(linedUpToBoilerX()){
-					autoState = 203;
+				if(correctPegAngle()){
+					autoState = 103;
 				}else{
 					//try again
-					autoState = 201;
+					autoState = 101;
 				}
-				
+
 			}
 			break;
-		case(203):
+			
+		case(103):
+			//adjust to optimal x (horizontal positioning) value for lift
+			if(!linedUpToLiftX()){
+				double x = pLoop(vision.getX(),xLift,1,xMax);
+				drive.mecanumDrive_Cartesian(x, 0, 0, 0);
+			}else{
+				drive.mecanumDrive_Cartesian(0, 0, 0, 0);
+				autoTimer.reset();
+				autoState = 104;
+			}
+			
+			break;
+		case(104):
+			//ensure stability of x (horizontal positioning) value for lift
+			drive.mecanumDrive_Cartesian(0, 0, 0, 0);
+			if(autoTimer.get() > 0.1){
+				if(linedUpToLiftX()){
+					autoState = 105;
+				}else{
+					//try again
+					autoState = 103;
+				}
+			}
+			break;
+		case(105):
+			//adjust to optimal y (distance) value for lift
+			if(!linedUpToLiftY()){
+				double y = pLoop(vision.getY(),yLift,1,yMax);
+				drive.mecanumDrive_Cartesian(0, y, 0, 0);
+			}else{
+				drive.mecanumDrive_Cartesian(0, 0, 0, 0);
+				autoTimer.reset();
+				autoState = 106;
+			}
+			break;
+			
+		case(106):
+			//ensure stability of y (distance) value for lift
+			drive.mecanumDrive_Cartesian(0, 0, 0, 0);
+			if(autoTimer.get() > 0.1){
+				if(linedUpToLiftX()){
+					autoState = 0;
+				}else{
+					//try again
+					autoState = 105;
+				}
+			}
+		break;
+			
+		case(200):
 			//start boiler sequence, center horizontally
 			if(!linedUpToBoilerX()){
 				double x = pLoop(vision.getX(),xBoiler,1,xMax);
@@ -161,22 +209,22 @@ public class VisionController {
 			}else{
 				drive.mecanumDrive_Cartesian(0, 0, 0, 0);
 				autoTimer.reset();
-				autoState = 204;
+				autoState = 201;
 			}
 			break;
-		case(204):
+		case(201):
 			//ensure stability of horizontal centering
 			drive.mecanumDrive_Cartesian(0, 0, 0, 0);
 			if(autoTimer.get() > 0.1){
 				if(linedUpToBoilerX()){
-					autoState = 205;
+					autoState = 202;
 				}else{
 					//try again
-					autoState = 203;
+					autoState = 200;
 				}
 			}
 			break;
-		case(205):
+		case(202):
 			//go to ideal distance
 			if(!linedUpToBoilerY()){
 				double y = pLoop(vision.getY(),yBoiler,1,yMax);
@@ -184,10 +232,10 @@ public class VisionController {
 			}else{
 				drive.mecanumDrive_Cartesian(0, 0, 0, 0);
 				autoTimer.reset();
-				autoState = 206;
+				autoState = 203;
 			}
 			break;
-		case(206):
+		case(203):
 			//ensure stability of distance
 			drive.mecanumDrive_Cartesian(0, 0, 0, 0);
 			if(autoTimer.get() > 0.1){
@@ -195,7 +243,7 @@ public class VisionController {
 					autoState = 0;
 				}else{
 					//try again
-					autoState = 205;
+					autoState = 202;
 				}
 			}
 			break;
@@ -219,6 +267,10 @@ public class VisionController {
 	public double pLoopAngle(double sensor, double target, double maxSpeed, double maxSensor){
 		
 		double error = 360 - sensor + target;
+		
+		if (error > 180){
+			error = sensor - target;
+		}
 		
 		if (Math.abs(closestIdealAngle - currentAngle)<180){
 			turningDirection = -1;
