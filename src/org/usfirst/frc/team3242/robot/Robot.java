@@ -163,17 +163,7 @@ public class Robot extends IterativeRobot {
 		}
 		shooter.elevate();
 		
-		if(controller.getRawButton(2) && !ballPickup.isEnabled()){
-			ballPickup.enable();
-		}
-		else if(controller.getRawButton(2) && ballPickup.isEnabled()){
-			ballPickup.disable();
-		}
-		
-		
-		
-
-		
+		ballPickup.set(controller.getRawButton(2));
 	}
 
 	
