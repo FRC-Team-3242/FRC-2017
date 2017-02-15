@@ -62,6 +62,10 @@ public class VisionController {
 		return Math.abs(currentAngle) % 360;
 	}
 	
+	public static double angleConverter(double angle){
+		return angle % 360;
+	}
+	
 	public void startLiftTracking(){
 		autoState = 100;
 	}

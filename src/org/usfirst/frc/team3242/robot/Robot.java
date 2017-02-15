@@ -22,6 +22,7 @@ public class Robot extends IterativeRobot {
 	final String frontGearAuto = "Front Gear";
 	final String leftGearAuto = "Left Gear";
 	final String rightGearAuto = "Right Gear";
+	final String shootingAuto = "Shooting";
 	String autoSelected;
 	SendableChooser<String> chooser = new SendableChooser<>();
 
@@ -49,6 +50,7 @@ public class Robot extends IterativeRobot {
 		chooser.addDefault("Front Gear", frontGearAuto);
 		chooser.addObject("Left Gear", leftGearAuto);
 		chooser.addObject("Right Gear", rightGearAuto);
+		chooser.addObject("Shooting", shootingAuto);
 		SmartDashboard.putData("Auto choices", chooser);
 		
 		driveEncoder = new Encoder(0, 1, false, CounterBase.EncodingType.k4X); 
@@ -88,7 +90,55 @@ public class Robot extends IterativeRobot {
 	public void autonomousPeriodic() {
 		double currentAngle = visionController.getNormalIMUAngle();
 		
+		if (DriverStation.getInstance().getAlliance() == Alliance.Blue){
+			currentAngle = (360 - currentAngle) % 360;
+		}
+		
 		switch (autoSelected) {
+		
+		case shootingAuto:
+			if (driveEncoder.getDistance() < 12 && !turnOne){
+				drive.mecanumDrive_Cartesian(0, 0.75, 0, 0);
+				break;
+			}
+			
+			if (currentAngle  < 45 && !turnOne){
+				drive.mecanumDrive_Cartesian(0, 0, 0.75 * turnScalar, 0);
+				break;
+			}
+			if (!turnOne){
+				turnOne = true;
+				driveEncoder.reset();
+			}
+			if (driveEncoder.getDistance() < 53.5 && turnOne){
+				drive.mecanumDrive_Cartesian(0, 0.75, 0, 0);
+				break;
+			}
+			if (currentAngle < 135 && !turnTwo){
+				drive.mecanumDrive_Cartesian(0, 0, 0.75 * turnScalar, 0);
+				break;
+			}
+			if (!turnTwo){
+				turnTwo = true;
+				driveEncoder.reset();
+			}
+			if (driveEncoder.getDistance() < 30){
+				drive.mecanumDrive_Cartesian(0, 0.75, 0, 0);
+				break;
+			}
+			
+			if( driveEncoder.getDistance() > 30 && turnTwo && !readyToTurn){
+				readyToTurn = true;
+			}
+			if(readyToTurn && !startedTracking){
+				visionController.startBoilerTracking();
+				startedTracking = true;
+			}
+			visionController.update();
+			
+			
+			
+			
 		case rightGearAuto:
 			//go forward 12 inches
 			if (driveEncoder.getDistance() < 12 && !turnOne){ 
@@ -97,7 +147,7 @@ public class Robot extends IterativeRobot {
 			}
 			
 			if (currentAngle <= 30 && !turnOne){ // turn 30 degrees
-				drive.mecanumDrive_Cartesian(0, 0, 0.75, 0); // rotate right at 75% speed
+				drive.mecanumDrive_Cartesian(0, 0, 0.75 * turnScalar, 0); // rotate right at 75% speed
 				break;
 			}
 			if (!turnOne){
@@ -111,7 +161,7 @@ public class Robot extends IterativeRobot {
 			}
 			
 			if (currentAngle < 295 || currentAngle > 305 && !turnTwo){ // rotate to around 300 degrees
-				drive.mecanumDrive_Cartesian(0, 0, -0.75, 0); // rotate left at 75% speed
+				drive.mecanumDrive_Cartesian(0, 0, -0.75 * turnScalar, 0); // rotate left at 75% speed
 				break;
 			}
 			
@@ -142,7 +192,7 @@ public class Robot extends IterativeRobot {
 				break;
 			}
 			if (currentAngle <= 60){ // turn 60 degrees
-				drive.mecanumDrive_Cartesian(0, 0, 0.75, 0); // rotate at 75% speed
+				drive.mecanumDrive_Cartesian(0, 0, 0.75 * turnScalar, 0); // rotate at 75% speed
 				break;
 			}
 			if (!turnOne){
