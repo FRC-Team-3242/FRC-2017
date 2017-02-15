@@ -37,6 +37,7 @@ public class Robot extends IterativeRobot {
 	boolean turnOne;
 	boolean turnTwo;
 	boolean readyToTurn;
+	boolean startedTracking;
 	int turnScalar;
 
 	
@@ -45,7 +46,7 @@ public class Robot extends IterativeRobot {
 	
 	@Override
 	public void robotInit() {
-		chooser.addDefault("Default Auto", frontGearAuto);
+		chooser.addDefault("Front Gear", frontGearAuto);
 		chooser.addObject("Left Gear", leftGearAuto);
 		chooser.addObject("Right Gear", rightGearAuto);
 		SmartDashboard.putData("Auto choices", chooser);
@@ -80,6 +81,7 @@ public class Robot extends IterativeRobot {
 		turnOne = false;
 		turnTwo = false;
 		readyToTurn = false;
+		startedTracking = false;
 	}
 
 	@Override
@@ -126,8 +128,9 @@ public class Robot extends IterativeRobot {
 			if( driveEncoder.getDistance() > 42 && turnTwo && !readyToTurn){
 				readyToTurn = true;
 			}
-			if(readyToTurn){
+			if(readyToTurn && !startedTracking){
 				visionController.startLiftTracking();
+				startedTracking = true;
 			}
 			visionController.update();
 			// to_do: use auto gear placing function
@@ -156,8 +159,9 @@ public class Robot extends IterativeRobot {
 			if (driveEncoder.getDistance() > 25 && !readyToTurn){
 				readyToTurn = true;
 			}
-			if(readyToTurn){
+			if(readyToTurn && !startedTracking){
 				visionController.startLiftTracking();
+				startedTracking = true;
 			}
 			
 			visionController.update();
@@ -171,7 +175,18 @@ public class Robot extends IterativeRobot {
 				// 1. Move forward
 				if (driveEncoder.getDistance() < 68){ // The distance to go forward
 					drive.mecanumDrive_Cartesian(0, 0.75, 0, 0); // go forward at 75% speed
+					break;
 				}
+				
+				if (driveEncoder.getDistance() > 68 && !readyToTurn){
+					readyToTurn = true;
+				}
+				if(readyToTurn && !startedTracking){
+					visionController.startLiftTracking();
+					startedTracking = true;
+				}
+				
+				visionController.update();
 				// to_do: 2. Use auto gear placing function
 				//
 				break;
