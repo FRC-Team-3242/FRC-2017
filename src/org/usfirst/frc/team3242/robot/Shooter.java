@@ -79,6 +79,7 @@ public class Shooter {
 	 */
 	public void setSpeedTolerance(double speedTolerance) {
 		this.speedTolerance = speedTolerance;
+		pid.setAbsoluteTolerance(speedTolerance);
 	}
 
 	/**
