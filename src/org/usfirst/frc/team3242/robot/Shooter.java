@@ -21,9 +21,10 @@ public class Shooter {
 	private CANTalon shooter;
 	private CANTalon elevator;
 	private Encoder encoder;
-	private double rpm;
+	private double rps; // is RPS instead of RPM, because encoder returns in distance per second. Setters and getter are 
+						// converted to and from RPM for easier human input and reading
 	private PIDController pid;
-	private double speedTolerance;
+	private double speedTolerance; // in percentages
 
 	/**
 	 * @param Motor controller for motor for shooter
@@ -37,7 +38,9 @@ public class Shooter {
 		this.encoder.setPIDSourceType(PIDSourceType.kRate);
 		isEnabled = false;
 		pid = new PIDController(0.7, 0.01, 0, encoder, shooter); //need to enter PID values
-		pid.setPercentTolerance(5);
+		speedTolerance = 5;
+		pid.setPercentTolerance(speedTolerance);
+		
 	}
 
 	
@@ -56,8 +59,8 @@ public class Shooter {
 	 * @param rpm 
 	 */
 	public void setRPM(double rpm){
-		this.rpm = rpm / 60;
-		pid.setSetpoint(this.rpm);
+		this.rps = rpm / 60;
+		pid.setSetpoint(this.rps);
 	}
 	/**
 	 * 
@@ -68,18 +71,19 @@ public class Shooter {
 	}
 	
 	/**
-	 * @return the speedTolerance
+	 * @return the speedTolerance (percent)
 	 */
 	public double getSpeedTolerance() {
 		return speedTolerance;
 	}
 
 	/**
-	 * @param speedTolerance the speedTolerance to set (rpm)
+	 * Default speedTolerance is 5%
+	 * @param speedTolerance the speedTolerance to set (percentage of tolerance)
 	 */
 	public void setSpeedTolerance(double speedTolerance) {
 		this.speedTolerance = speedTolerance;
-		pid.setAbsoluteTolerance(speedTolerance);
+		pid.setPercentTolerance(speedTolerance);
 	}
 
 	/**
