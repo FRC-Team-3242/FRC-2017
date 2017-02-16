@@ -7,10 +7,10 @@ import edu.wpi.first.wpilibj.PIDSourceType;
 
 public class PIDHeadingInput implements PIDSource {
 
-	PigeonImu pigeon;
+	PigeonImu imu;
 	
-	public PIDHeadingInput(PigeonImu pigeon){
-		this.pigeon	= pigeon;
+	public PIDHeadingInput(PigeonImu imu){
+		this.imu	= imu;
 	}
 	
 	@Override
@@ -30,9 +30,9 @@ public class PIDHeadingInput implements PIDSource {
 		
 		//get absolute value of heading [0,360)
 		double[] ypr = new double[3];
-		pigeon.GetYawPitchRoll(ypr);
+		imu.GetYawPitchRoll(ypr);
 		double direction = Math.signum(ypr[0]);
-		double yaw = Math.abs(ypr[0]) % 360.0;// -90 + 360
+		double yaw = Math.abs(ypr[0]) % 360.0;// -90 + 360 = 270
 		if(direction < 0){
 			yaw = 360.0 - yaw;
 		}

@@ -2,14 +2,15 @@ package org.usfirst.frc.team3242.robot;
 
 import com.ctre.PigeonImu;
 
+import edu.wpi.first.wpilibj.PIDController;
 import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.Timer;
 
 public class VisionController {
 	
 	private VisionServer vision;
-	private PigeonImu gyro;
 	private RobotDrive drive;
+	private PIDController angleController;
 	
 	//both tolerances within 0.5%
 	private final double xTolerance = 6.4;
@@ -43,23 +44,28 @@ public class VisionController {
 	private Timer autoTimer;
 	int turningDirection;
 	double currentAngle;
+	PigeonImu imu;
 	
-	
-	public VisionController(VisionServer vision, RobotDrive drive, PigeonImu gyro){
+	public VisionController(VisionServer vision, RobotDrive drive, PIDController angleController, PigeonImu imu){
 		this.vision = vision;
 		this.drive = drive;
 		autoState = 0;
 		closestIdealAngle = 0;
 		autoTimer = new Timer();
 		autoTimer.start();
-		this.gyro = gyro;
-		gyro.SetFusedHeading(360 * 32);
+		this.angleController = angleController;
+		this.imu = imu;
 	}
 	
-	public double getNormalIMUAngle(){
-		gyro.GetGeneralStatus(new PigeonImu.GeneralStatus());
-		double currentAngle = gyro.GetFusedHeading(new PigeonImu.FusionStatus());
-		return Math.abs(currentAngle) % 360;
+	public double getAbsoluteIMUAngle(){
+		double[] ypr = new double[3];
+		imu.GetYawPitchRoll(ypr);
+		double direction = Math.signum(ypr[0]);
+		double yaw = Math.abs(ypr[0]) % 360.0;// -90 + 360
+		if(direction < 0){
+			yaw = 360.0 - yaw;
+		}
+		return yaw;
 	}
 	
 	public static double angleConverter(double angle){
@@ -99,7 +105,7 @@ public class VisionController {
 		return numberInTolerance(vision.getY(),yBoiler,yTolerance);
 	}
 	public boolean correctPegAngle(){
-		return numberInTolerance(getNormalIMUAngle(), closestIdealAngle, gyroTolerance);
+		return numberInTolerance(getAbsoluteIMUAngle(), closestIdealAngle, gyroTolerance);
 	}
 	
 	/**
@@ -118,44 +124,28 @@ public class VisionController {
 		case(100):
 			//select nearest ideal angle
 			
-			currentAngle = getNormalIMUAngle();
+			currentAngle = getAbsoluteIMUAngle();
 			if (currentAngle < 30 && currentAngle > 0 || currentAngle < 0 && currentAngle > 330){
-				closestIdealAngle = angleA;
+				angleController.setSetpoint(angleA);
 			}
 			else if (currentAngle < 330 && currentAngle > 270){
-				closestIdealAngle = angleB;
+				angleController.setSetpoint(angleB);
 			}
 			else if (currentAngle < 90 && currentAngle > 30){
-				closestIdealAngle = angleC;
+				angleController.setSetpoint(angleC);
 			}
+			angleController.enable();
 			autoState = 101;
 			break;
 		case(101):
 			//adjust to nearest angle
-			currentAngle = getNormalIMUAngle();
-			if (!correctPegAngle()){
-				drive.mecanumDrive_Cartesian(0, 0, turningDirection * pLoopAngle(currentAngle, closestIdealAngle, 1, 60), 0);
-			}
-			else {
+			if (angleController.onTarget()){
+				angleController.disable();
 				drive.mecanumDrive_Cartesian(0, 0, 0, 0);
 				autoTimer.reset();
-				autoState = 102;
+				autoState = 103;
 			}
 			break;
-		case(102):
-			//ensure stability of peg angle positioning
-			drive.mecanumDrive_Cartesian(0, 0, 0, 0);
-			if(autoTimer.get() > 0.1){
-				if(correctPegAngle()){
-					autoState = 103;
-				}else{
-					//try again
-					autoState = 101;
-				}
-
-			}
-			break;
-			
 		case(103):
 			//adjust to optimal x (horizontal positioning) value for lift
 			if(!linedUpToLiftX()){

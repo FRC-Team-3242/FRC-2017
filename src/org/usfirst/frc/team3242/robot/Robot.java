@@ -77,7 +77,7 @@ public class Robot extends IterativeRobot {
 		ballPickup = new BallPickup(new CANTalon(6), new CANTalon(7));
 		
 		vision = new VisionServer();
-		visionController = new VisionController(vision, drive, imu);
+		visionController = new VisionController(vision, drive, angleController, imu);
 	}
 	
 	@Override
@@ -100,7 +100,7 @@ public class Robot extends IterativeRobot {
 
 	@Override
 	public void autonomousPeriodic() {
-		double currentAngle = visionController.getNormalIMUAngle();
+		double currentAngle = visionController.getAbsoluteIMUAngle();
 		
 		//flips heading to counter-clockwise when starting from other side of field
 		if (DriverStation.getInstance().getAlliance() == Alliance.Blue){
