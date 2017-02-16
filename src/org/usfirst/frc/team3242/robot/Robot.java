@@ -9,6 +9,8 @@ import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.PIDController;
+import edu.wpi.first.wpilibj.PIDController.Tolerance;
 import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -35,6 +37,7 @@ public class Robot extends IterativeRobot {
 	RobotDrive drive;
 	PigeonImu imu;
 	PigeonImu.GeneralStatus genStatus;
+	PIDController angleController;
 	boolean turnOne;
 	boolean turnTwo;
 	boolean readyToTurn;
@@ -42,7 +45,7 @@ public class Robot extends IterativeRobot {
 	int turnScalar;
 
 	
-	double[] ypr = new double[3];
+	double[] ypr;
 
 	
 	@Override
@@ -58,11 +61,20 @@ public class Robot extends IterativeRobot {
 		
 		drive = new RobotDrive(new CANTalon(0), new CANTalon(1), new CANTalon(2), new CANTalon(3));
 		
-		imu = new PigeonImu(4);
+		imu = new PigeonImu(20);
+		ypr =  new double[3];
+		
+		angleController = new PIDController(0.8, 0.01,0,new PIDHeadingInput(imu),
+				(num) -> {drive.mecanumDrive_Cartesian(0, 0, num, 0);});
+		angleController.setInputRange(0, 360);
+		angleController.setOutputRange(-100, 100);
+		angleController.setPercentTolerance(5);
+		angleController.setContinuous();
 		
 		controller = new Joystick(1);
-		shooter = new Shooter(new CANTalon(1), new Encoder(0, 1, false, CounterBase.EncodingType.k4X), new CANTalon(1));
+		shooter = new Shooter(new CANTalon(4), new Encoder(0, 1, false, CounterBase.EncodingType.k4X), new CANTalon(5));
 		shooter.setSpeedTolerance(20);
+		ballPickup = new BallPickup(new CANTalon(6), new CANTalon(7));
 		
 		vision = new VisionServer();
 		visionController = new VisionController(vision, drive, imu);
@@ -90,6 +102,7 @@ public class Robot extends IterativeRobot {
 	public void autonomousPeriodic() {
 		double currentAngle = visionController.getNormalIMUAngle();
 		
+		//flips heading to counter-clockwise when starting from other side of field
 		if (DriverStation.getInstance().getAlliance() == Alliance.Blue){
 			currentAngle = (360 - currentAngle) % 360;
 		}

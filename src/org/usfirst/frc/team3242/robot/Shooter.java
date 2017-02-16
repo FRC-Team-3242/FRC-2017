@@ -38,6 +38,8 @@ public class Shooter {
 		this.encoder.setPIDSourceType(PIDSourceType.kRate);
 		isEnabled = false;
 		pid = new PIDController(0.7, 0.01, 0, encoder, shooter); //need to enter PID values
+		pid.setInputRange(-5310, 5310); //need to test
+		pid.setOutputRange(-100, 100);
 		speedTolerance = 5;
 		pid.setPercentTolerance(speedTolerance);
 		
@@ -102,8 +104,6 @@ public class Shooter {
 	 */
 	public void enable(){
 		pid.enable();
-		pid.setInputRange(-5310, 5310); //need to test
-		pid.setOutputRange(-1, 1);
 		isEnabled = true;
 	}
 	/**
