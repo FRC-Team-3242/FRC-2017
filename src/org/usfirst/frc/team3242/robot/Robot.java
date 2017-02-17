@@ -67,8 +67,7 @@ public class Robot extends IterativeRobot {
 		angleController = new PIDController(0.8, 0.01,0,new PIDHeadingInput(imu),
 				(num) -> {drive.mecanumDrive_Cartesian(0, 0, num, 0);});
 		angleController.setInputRange(0, 360);
-		angleController.setOutputRange(-100, 100);
-		angleController.setPercentTolerance(5);
+		angleController.setPercentTolerance(1);
 		angleController.setContinuous();
 		
 		controller = new Joystick(1);

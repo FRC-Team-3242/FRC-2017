@@ -3,6 +3,8 @@ package org.usfirst.frc.team3242.robot;
 import com.ctre.PigeonImu;
 
 import edu.wpi.first.wpilibj.PIDController;
+import edu.wpi.first.wpilibj.PIDSource;
+import edu.wpi.first.wpilibj.PIDSourceType;
 import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.Timer;
 
@@ -17,8 +19,8 @@ public class VisionController {
 	private final double yTolerance = 3.6;
 	private final double gyroTolerance = 1.8;
 	
-	private final double xMax = 1280;
-	private final double yMax = 720;
+	private final double xMax = 640;
+	private final double yMax = 480;
 	
 	//center point of ideal lift
 	private final double xLift = 400;
@@ -32,6 +34,11 @@ public class VisionController {
 	//center point of boiler
 	private final double xBoiler = 700;
 	private final double yBoiler = 100;
+	
+	//pid controllers
+	private PIDController xAngle;
+	private PIDController xStrafe;
+	private PIDController yDrive;
 	
 	/**
 	 * integer for state machine
@@ -55,6 +62,18 @@ public class VisionController {
 		autoTimer.start();
 		this.angleController = angleController;
 		this.imu = imu;
+		VisionSourceX visionSourceX = new VisionSourceX();
+		xAngle = new PIDController(0.8,0.01,0,visionSourceX,(a) -> {drive.mecanumDrive_Cartesian(0, 0, a, 0);});
+		xAngle.setInputRange(0, xMax);
+		xAngle.setPercentTolerance(0.833);
+		xAngle.setSetpoint(xBoiler);
+		xStrafe = new PIDController(0.8,0.01,0,visionSourceX,(a) -> {drive.mecanumDrive_Cartesian(a, 0, 0, 0);});
+		xStrafe.setInputRange(0, xMax);
+		xStrafe.setPercentTolerance(0.833);
+		xStrafe.setSetpoint(xLift);
+		yDrive = new PIDController(0.8,0.01,0,new VisionSourceY(),(a) -> {drive.mecanumDrive_Cartesian(0, a, 0, 0);});
+		yDrive.setInputRange(0, yMax);
+		yDrive.setPercentTolerance(0.833);
 	}
 	
 	public double getAbsoluteIMUAngle(){
@@ -82,6 +101,10 @@ public class VisionController {
 	
 	public void stopAll(){
 		autoState = 0;
+		xAngle.disable();
+		xStrafe.disable();
+		yDrive.disable();
+		angleController.disable();
 	}
 	
 	public int getAutoState(){
@@ -123,7 +146,6 @@ public class VisionController {
 		
 		case(100):
 			//select nearest ideal angle
-			
 			currentAngle = getAbsoluteIMUAngle();
 			if (currentAngle < 30 && currentAngle > 0 || currentAngle < 0 && currentAngle > 330){
 				angleController.setSetpoint(angleA);
@@ -142,103 +164,53 @@ public class VisionController {
 			if (angleController.onTarget()){
 				angleController.disable();
 				drive.mecanumDrive_Cartesian(0, 0, 0, 0);
-				autoTimer.reset();
+				xStrafe.enable();
+				autoState = 102;
+			}
+			break;
+		case(102):
+			//adjust to optimal x (horizontal positioning) value for lift
+			if(xStrafe.onTarget()){
+				xStrafe.disable();
+				drive.mecanumDrive_Cartesian(0, 0, 0, 0);
+				yDrive.setSetpoint(yLift);
+				yDrive.enable();
 				autoState = 103;
 			}
+			
 			break;
 		case(103):
-			//adjust to optimal x (horizontal positioning) value for lift
-			if(!linedUpToLiftX()){
-				double x = pLoop(vision.getX(),xLift,1,xMax);
-				drive.mecanumDrive_Cartesian(x, 0, 0, 0);
-			}else{
-				drive.mecanumDrive_Cartesian(0, 0, 0, 0);
-				autoTimer.reset();
-				autoState = 104;
-			}
-			
-			break;
-		case(104):
-			//ensure stability of x (horizontal positioning) value for lift
-			drive.mecanumDrive_Cartesian(0, 0, 0, 0);
-			if(autoTimer.get() > 0.1){
-				if(linedUpToLiftX()){
-					autoState = 105;
-				}else{
-					//try again
-					autoState = 103;
-				}
-			}
-			break;
-		case(105):
 			//adjust to optimal y (distance) value for lift
-			if(!linedUpToLiftY()){
-				double y = pLoop(vision.getY(),yLift,1,yMax);
-				drive.mecanumDrive_Cartesian(0, y, 0, 0);
-			}else{
+			if(yDrive.onTarget()){
+				//done
+				yDrive.disable();
 				drive.mecanumDrive_Cartesian(0, 0, 0, 0);
-				autoTimer.reset();
-				autoState = 106;
+				autoState = 0;
 			}
 			break;
-			
-		case(106):
-			//ensure stability of y (distance) value for lift
-			drive.mecanumDrive_Cartesian(0, 0, 0, 0);
-			if(autoTimer.get() > 0.1){
-				if(linedUpToLiftX()){
-					autoState = 0;
-				}else{
-					//try again
-					autoState = 105;
-				}
-			}
-		break;
 			
 		case(200):
-			//start boiler sequence, center horizontally
-			if(!linedUpToBoilerX()){
-				double x = pLoop(vision.getX(),xBoiler,1,xMax);
-				drive.mecanumDrive_Cartesian(0, 0, x, 0);
-			}else{
-				drive.mecanumDrive_Cartesian(0, 0, 0, 0);
-				autoTimer.reset();
-				autoState = 201;
-			}
+			xAngle.enable();
+			autoState = 201;
 			break;
+			
 		case(201):
-			//ensure stability of horizontal centering
-			drive.mecanumDrive_Cartesian(0, 0, 0, 0);
-			if(autoTimer.get() > 0.1){
-				if(linedUpToBoilerX()){
-					autoState = 202;
-				}else{
-					//try again
-					autoState = 200;
-				}
+			//start boiler sequence, center horizontally
+			if(xAngle.onTarget()){
+				xAngle.disable();
+				drive.mecanumDrive_Cartesian(0, 0, 0, 0);
+				yDrive.setSetpoint(xBoiler);
+				yDrive.enable();
+				autoState = 202;
 			}
 			break;
 		case(202):
 			//go to ideal distance
-			if(!linedUpToBoilerY()){
-				double y = pLoop(vision.getY(),yBoiler,1,yMax);
-				drive.mecanumDrive_Cartesian(0, y, 0, 0);
-			}else{
+			if(yDrive.onTarget()){
+				//done
+				yDrive.disable();
 				drive.mecanumDrive_Cartesian(0, 0, 0, 0);
-				autoTimer.reset();
-				autoState = 203;
-			}
-			break;
-		case(203):
-			//ensure stability of distance
-			drive.mecanumDrive_Cartesian(0, 0, 0, 0);
-			if(autoTimer.get() > 0.1){
-				if(linedUpToBoilerX()){
-					autoState = 0;
-				}else{
-					//try again
-					autoState = 202;
-				}
+				autoState = 0;
 			}
 			break;
 		}
@@ -257,33 +229,6 @@ public class VisionController {
 		double normalizedError = error / maxSensor;
 		return normalizedError * maxSpeed;
 	}
-	
-	public double pLoopAngle(double sensor, double target, double maxSpeed, double maxSensor){
-		
-		double error = 360 - sensor + target;
-		
-		if (error > 180){
-			error = sensor - target;
-		}
-		
-		if (Math.abs(closestIdealAngle - currentAngle)<180){
-			turningDirection = -1;
-		}
-		else if (Math.abs(closestIdealAngle - currentAngle)>=180){
-			turningDirection = 1;
-		}
-		
-		if (turningDirection == -1 && closestIdealAngle > currentAngle){
-			turningDirection *= -1;
-		}
-		else if (turningDirection == 1 && closestIdealAngle < currentAngle){
-			turningDirection *= -1;
-		}
-		
-		double normalizedError = error / maxSensor;
-		return normalizedError * maxSpeed * turningDirection;
-	}
-	
 
 	/**
 	 * @param value this is the input
@@ -293,4 +238,45 @@ public class VisionController {
 		return (value - tolerance < target) && (target < value + tolerance);
 	}
 	
+	class VisionSourceX implements PIDSource{
+		public VisionSourceX(){
+			//nothing to instantiate
+		}
+
+		@Override
+		public void setPIDSourceType(PIDSourceType pidSource) {
+			//do nothing, always use displacement
+		}
+
+		@Override
+		public PIDSourceType getPIDSourceType() {
+			return PIDSourceType.kDisplacement;
+		}
+
+		@Override
+		public double pidGet() {
+			return vision.getX();
+		}
+	}
+	
+	class VisionSourceY implements PIDSource{
+		public VisionSourceY(){
+			//nothing to instantiate
+		}
+
+		@Override
+		public void setPIDSourceType(PIDSourceType pidSource) {
+			//do nothing, always use displacement
+		}
+
+		@Override
+		public PIDSourceType getPIDSourceType() {
+			return PIDSourceType.kDisplacement;
+		}
+
+		@Override
+		public double pidGet() {
+			return vision.getY();
+		}
+	}
 }
