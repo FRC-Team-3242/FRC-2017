@@ -30,6 +30,7 @@ public class Robot extends IterativeRobot {
 
 	Shooter shooter;
 	BallPickup ballPickup;
+	Toggle shooterToggle;
 	Joystick controller;
 	VisionServer vision;
 	VisionController visionController;
@@ -78,6 +79,8 @@ public class Robot extends IterativeRobot {
 		
 		vision = new VisionServer();
 		visionController = new VisionController(vision, drive, angleController, imu);
+		
+		shooterToggle = new Toggle();
 	}
 	
 	@Override
@@ -269,15 +272,23 @@ public class Robot extends IterativeRobot {
 	}
 
 	@Override
+	public void teleopInit(){
+		visionController.stopAll();
+		shooter.disable();
+	}
+	
+	@Override
 	public void teleopPeriodic() {
 		drive.mecanumDrive_Cartesian(controller.getRawAxis(4), controller.getRawAxis(1), controller.getRawAxis(0), 0);
-		
-		if (controller.getRawButton(4) && !shooter.isEnabled()){
+		if(controller.getRawButton(4)){
+			shooterToggle.toggle();
+		}
+		if (shooterToggle.getStatus() && !shooter.isEnabled()){
 			shooter.enable();
 			shooter.setRPM(5000); //make adjustable by smartdashboard?
 			
 		}
-		else if (controller.getRawButton(4) && shooter.isEnabled()){
+		else if (shooterToggle.getStatus() && shooter.isEnabled()){
 			shooter.disable();
 		}
 		shooter.elevate();
