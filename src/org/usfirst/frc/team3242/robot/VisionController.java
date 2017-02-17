@@ -87,9 +87,6 @@ public class VisionController {
 		return yaw;
 	}
 	
-	public static double angleConverter(double angle){
-		return angle % 360;
-	}
 	
 	public void startLiftTracking(){
 		autoState = 100;
