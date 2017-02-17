@@ -62,9 +62,6 @@ public class VisionController {
 		return Math.abs(currentAngle) % 360;
 	}
 	
-	public static double angleConverter(double angle){
-		return angle % 360;
-	}
 	
 	public void startLiftTracking(){
 		autoState = 100;
@@ -119,7 +116,7 @@ public class VisionController {
 			//select nearest ideal angle
 			
 			currentAngle = getNormalIMUAngle();
-			if (currentAngle < 30 && currentAngle > 0 || currentAngle < 0 && currentAngle > 330){
+			if (currentAngle <= 30 && currentAngle > 0 || currentAngle < 0 && currentAngle >= 330){
 				closestIdealAngle = angleA;
 			}
 			else if (currentAngle < 330 && currentAngle > 270){
@@ -134,7 +131,7 @@ public class VisionController {
 			//adjust to nearest angle
 			currentAngle = getNormalIMUAngle();
 			if (!correctPegAngle()){
-				drive.mecanumDrive_Cartesian(0, 0, turningDirection * pLoopAngle(currentAngle, closestIdealAngle, 1, 60), 0);
+				drive.mecanumDrive_Cartesian(0, 0, pLoopAngle(currentAngle, closestIdealAngle, 1, 60), 0);
 			}
 			else {
 				drive.mecanumDrive_Cartesian(0, 0, 0, 0);
@@ -270,7 +267,7 @@ public class VisionController {
 	
 	public double pLoopAngle(double sensor, double target, double maxSpeed, double maxSensor){
 		
-		double error = 360 - sensor + target;
+		double error = 360 + sensor - target;
 		
 		if (error > 180){
 			error = sensor - target;
@@ -283,7 +280,7 @@ public class VisionController {
 			turningDirection = 1;
 		}
 		
-		if (turningDirection == -1 && closestIdealAngle > currentAngle){
+		if (turningDirection == -1 && closestIdealAngle > currentAngle){ //in case of overshooting
 			turningDirection *= -1;
 		}
 		else if (turningDirection == 1 && closestIdealAngle < currentAngle){

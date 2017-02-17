@@ -40,6 +40,7 @@ public class Robot extends IterativeRobot {
 	boolean readyToTurn;
 	boolean startedTracking;
 	int turnScalar;
+	int i;
 
 	
 	double[] ypr = new double[3];
@@ -84,6 +85,7 @@ public class Robot extends IterativeRobot {
 		turnTwo = false;
 		readyToTurn = false;
 		startedTracking = false;
+		i = 0;
 	}
 
 	@Override
@@ -97,150 +99,160 @@ public class Robot extends IterativeRobot {
 		switch (autoSelected) {
 		
 		case shootingAuto:
-			if (driveEncoder.getDistance() < 12 && !turnOne){
-				drive.mecanumDrive_Cartesian(0, 0.75, 0, 0);
-				break;
-			}
 			
-			if (currentAngle  < 45 && !turnOne){
-				drive.mecanumDrive_Cartesian(0, 0, 0.75 * turnScalar, 0);
-				break;
-			}
-			if (!turnOne){
-				turnOne = true;
-				driveEncoder.reset();
-			}
-			if (driveEncoder.getDistance() < 53.5 && turnOne){
-				drive.mecanumDrive_Cartesian(0, 0.75, 0, 0);
-				break;
-			}
-			if (currentAngle < 135 && !turnTwo){
-				drive.mecanumDrive_Cartesian(0, 0, 0.75 * turnScalar, 0);
-				break;
-			}
-			if (!turnTwo){
-				turnTwo = true;
-				driveEncoder.reset();
-			}
-			if (driveEncoder.getDistance() < 30){
-				drive.mecanumDrive_Cartesian(0, 0.75, 0, 0);
-				break;
-			}
+			switch (i){
 			
-			if( driveEncoder.getDistance() > 30 && turnTwo && !readyToTurn){
-				readyToTurn = true;
-			}
-			if(readyToTurn && !startedTracking){
+			case 0:
+				if (driveEncoder.getDistance() < 12){
+					drive.mecanumDrive_Cartesian(0, 0.75, 0, 0);
+				}
+				else{
+					i++;
+				}
+				
+			case 1:
+				if (currentAngle  < 45){
+					drive.mecanumDrive_Cartesian(0, 0, 0.75 * turnScalar, 0);
+				}
+				else{
+					i++;
+					driveEncoder.reset();
+				}
+			case 2:
+				if (driveEncoder.getDistance() < 53.5){
+					drive.mecanumDrive_Cartesian(0, 0.75, 0, 0);
+				}
+				else{
+					i++;
+				}
+			case 3:
+				if (currentAngle < 135 && !turnTwo){
+					drive.mecanumDrive_Cartesian(0, 0, 0.75 * turnScalar, 0);
+				}
+				else{
+					i++;
+					driveEncoder.reset();
+				}
+			case 4:
+				if (driveEncoder.getDistance() < 30){
+					drive.mecanumDrive_Cartesian(0, 0.75, 0, 0);
+				}
+				else{
+					i++;
+				}
+			case 5:
 				visionController.startBoilerTracking();
-				startedTracking = true;
+				i++;
+			case 6:
+				visionController.update();
+				break;
+				
 			}
-			visionController.update();
-			
-			
 			
 			
 		case rightGearAuto:
-			//go forward 12 inches
-			if (driveEncoder.getDistance() < 12 && !turnOne){ 
-				drive.mecanumDrive_Cartesian(0, 0.75, 0, 0); // go forward at 75% speed
-				break;
-			}
-			
-			if (currentAngle <= 30 && !turnOne){ // turn 30 degrees
-				drive.mecanumDrive_Cartesian(0, 0, 0.75 * turnScalar, 0); // rotate right at 75% speed
-				break;
-			}
-			if (!turnOne){
-				turnOne = true;
-				driveEncoder.reset();
-			}
-
-			if (driveEncoder.getDistance() < 66.25 && turnOne){ // go forward 66.25 inches
-				drive.mecanumDrive_Cartesian(0, 0.75, 0, 0); // go forward at 75% speed
-				break;
-			}
-			
-			if (currentAngle < 295 || currentAngle > 305 && !turnTwo){ // rotate to around 300 degrees
-				drive.mecanumDrive_Cartesian(0, 0, -0.75 * turnScalar, 0); // rotate left at 75% speed
-				break;
-			}
-			
-			if (!turnTwo){
-				turnTwo = true;
-				driveEncoder.reset();
-				
-			}
-			
-			if (driveEncoder.getDistance() < 42 && turnTwo){
-				drive.mecanumDrive_Cartesian(0, 0.75, 0, 0); // go forward at 75% speed
-				break;
-			}
-			if( driveEncoder.getDistance() > 42 && turnTwo && !readyToTurn){
-				readyToTurn = true;
-			}
-			if(readyToTurn && !startedTracking){
+			switch (i){
+			case 0:
+				//go forward 12 inches
+				if (driveEncoder.getDistance() < 12){ 
+					drive.mecanumDrive_Cartesian(0, 0.75, 0, 0); // go forward at 75% speed
+				}
+				else{
+					i++;
+				}
+			case 1:
+				if (currentAngle <= 30){ // turn 30 degrees
+					drive.mecanumDrive_Cartesian(0, 0, 0.75 * turnScalar, 0); // rotate right at 75% speed
+				}
+				else{
+					i++;
+					driveEncoder.reset();
+				}
+			case 2:
+				if (driveEncoder.getDistance() < 66.25){ // go forward 66.25 inches
+					drive.mecanumDrive_Cartesian(0, 0.75, 0, 0); // go forward at 75% speed
+				}
+				else{
+					i++;
+				}
+			case 3:
+				if (currentAngle < 295 || currentAngle > 305){ // rotate to around 300 degrees
+					drive.mecanumDrive_Cartesian(0, 0, -0.75 * turnScalar, 0); // rotate left at 75% speed
+				}
+				else{
+					i++;
+					driveEncoder.reset();
+				}
+			case 4:
+				if (driveEncoder.getDistance() < 42){
+					drive.mecanumDrive_Cartesian(0, 0.75, 0, 0); // go forward at 75% speed
+				}
+				else{
+					i++;
+				}
+			case 5:
 				visionController.startLiftTracking();
-				startedTracking = true;
+				i++;
+			case 6:
+				visionController.update();
+				// to_do: use auto gear placing function
+				break;
 			}
-			visionController.update();
-			// to_do: use auto gear placing function
-			break;
 		case leftGearAuto:
 			//go forward 78.5 inches
-			if (driveEncoder.getDistance() < 78.5 && !turnOne){ 
-				drive.mecanumDrive_Cartesian(0, 0.75, 0, 0); // go forward at 75% speed
-				break;
-			}
-			if (currentAngle <= 60){ // turn 60 degrees
-				drive.mecanumDrive_Cartesian(0, 0, 0.75 * turnScalar, 0); // rotate at 75% speed
-				break;
-			}
-			if (!turnOne){
-				turnOne = true;
-				driveEncoder.reset();
-				
-			}
-
-			if (driveEncoder.getDistance() < 25 && turnOne){
-				drive.mecanumDrive_Cartesian(0, 0.75, 0, 0); // go forward at 75% speed
-				break;
-			}
-			
-			if (driveEncoder.getDistance() > 25 && !readyToTurn){
-				readyToTurn = true;
-			}
-			if(readyToTurn && !startedTracking){
+		switch (i){
+			case 0:
+				if (driveEncoder.getDistance() < 78.5){ 
+					drive.mecanumDrive_Cartesian(0, 0.75, 0, 0); // go forward at 75% speed
+				}
+				else{
+					i++;
+				}
+			case 1:
+				if (currentAngle <= 60){ // turn 60 degrees
+					drive.mecanumDrive_Cartesian(0, 0, 0.75 * turnScalar, 0); // rotate at 75% speed
+				}
+				else{
+					i++;
+					driveEncoder.reset();
+				}
+			case 2:
+				if (driveEncoder.getDistance() < 25){
+					drive.mecanumDrive_Cartesian(0, 0.75, 0, 0); // go forward at 75% speed
+				}
+				else{
+					i++;
+				}
+			case 3:
 				visionController.startLiftTracking();
-				startedTracking = true;
-			}
-			
-			visionController.update();
-			
+				i++;	
+			case 4:
+				visionController.update();
+				
 			// to_do: use auto gear placing function (done?)
-			
-			break;
-			
+			break;		
+		}
 		case frontGearAuto:
 			default:
-				// 1. Move forward
-				if (driveEncoder.getDistance() < 68){ // The distance to go forward
-					drive.mecanumDrive_Cartesian(0, 0.75, 0, 0); // go forward at 75% speed
+				switch (i){
+				
+				case 0:
+					// 1. Move forward
+					if (driveEncoder.getDistance() < 68){ // The distance to go forward
+						drive.mecanumDrive_Cartesian(0, 0.75, 0, 0); // go forward at 75% speed
+					}
+					else{
+						i++;
+					}
+				case 1:
+						visionController.startLiftTracking();
+						i++;
+				case 2:
+					visionController.update();
+					// to_do: 2. Use auto gear placing function
+					//
 					break;
 				}
-				
-				if (driveEncoder.getDistance() > 68 && !readyToTurn){
-					readyToTurn = true;
-				}
-				if(readyToTurn && !startedTracking){
-					visionController.startLiftTracking();
-					startedTracking = true;
-				}
-				
-				visionController.update();
-				// to_do: 2. Use auto gear placing function
-				//
-				break;
-			
 		}
 	}
 
