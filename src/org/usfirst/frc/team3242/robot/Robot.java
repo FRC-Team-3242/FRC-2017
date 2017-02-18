@@ -32,7 +32,7 @@ public class Robot extends IterativeRobot {
 	BallPickup ballPickup;
 	Toggle shooterToggle;
 	Joystick controller;
-	VisionServer vision;
+	VisionServer gearVision, boilerVision;
 	VisionController visionController;
 	Encoder driveEncoder;
 	RobotDrive drive;
@@ -77,10 +77,16 @@ public class Robot extends IterativeRobot {
 		shooter.setSpeedTolerance(20);
 		ballPickup = new BallPickup(new CANTalon(6), new CANTalon(7));
 		
-		vision = new VisionServer();
-		visionController = new VisionController(vision, drive, angleController, imu);
+		gearVision = new VisionServer("A");
+		boilerVision = new VisionServer("B");
+		visionController = new VisionController(gearVision, boilerVision, drive, angleController, imu);
 		
 		shooterToggle = new Toggle();
+	}
+	
+	public void sendInfoToDashboard(){
+		SmartDashboard.putBoolean("Gear in sight", gearVision.targetFound());
+		SmartDashboard.putBoolean("Boiler in sight", boilerVision.targetFound());
 	}
 	
 	@Override
@@ -279,7 +285,8 @@ public class Robot extends IterativeRobot {
 	
 	@Override
 	public void teleopPeriodic() {
-		drive.mecanumDrive_Cartesian(controller.getRawAxis(4), controller.getRawAxis(1), controller.getRawAxis(0), 0);
+		if(visionController.getAutoState() != 0)
+			drive.mecanumDrive_Cartesian(controller.getRawAxis(4), controller.getRawAxis(1), controller.getRawAxis(0), 0);
 		if(controller.getRawButton(4)){
 			shooterToggle.toggle();
 		}

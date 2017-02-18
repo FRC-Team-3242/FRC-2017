@@ -10,21 +10,16 @@ import edu.wpi.first.wpilibj.Timer;
 
 public class VisionController {
 	
-	private VisionServer vision;
 	private RobotDrive drive;
 	private PIDController angleController;
 	
-	//both tolerances within 0.5%
-	private final double xTolerance = 6.4;
-	private final double yTolerance = 3.6;
-	private final double gyroTolerance = 1.8;
-	
+	//camera resolution
 	private final double xMax = 640;
 	private final double yMax = 480;
 	
 	//center point of ideal lift
-	private final double xLift = 400;
-	private final double yLift = 600;
+	private final double xLiftIdeal = 400;
+	private final double yLiftIdeal = 600;
 	
 	//ideal angles for lifts
 	private final double angleA = 0;
@@ -32,13 +27,14 @@ public class VisionController {
 	private final double angleC = 60;
 	
 	//center point of boiler
-	private final double xBoiler = 700;
-	private final double yBoiler = 100;
+	private final double xBoilerIdeal = 700;
+	private final double yBoilerIdeal = 100;
 	
 	//pid controllers
-	private PIDController xAngle;
-	private PIDController xStrafe;
-	private PIDController yDrive;
+	private PIDController xBoilerController;
+	private PIDController yBoilerController;
+	private PIDController xGearController;
+	private PIDController yGearController;
 	
 	/**
 	 * integer for state machine
@@ -53,8 +49,7 @@ public class VisionController {
 	double currentAngle;
 	PigeonImu imu;
 	
-	public VisionController(VisionServer vision, RobotDrive drive, PIDController angleController, PigeonImu imu){
-		this.vision = vision;
+	public VisionController(VisionServer gearVision, VisionServer boilerVision, RobotDrive drive, PIDController angleController, PigeonImu imu){
 		this.drive = drive;
 		autoState = 0;
 		closestIdealAngle = 0;
@@ -62,18 +57,28 @@ public class VisionController {
 		autoTimer.start();
 		this.angleController = angleController;
 		this.imu = imu;
-		VisionSourceX visionSourceX = new VisionSourceX();
-		xAngle = new PIDController(0.8,0.01,0,visionSourceX,(a) -> {drive.mecanumDrive_Cartesian(0, 0, a, 0);});
-		xAngle.setInputRange(0, xMax);
-		xAngle.setPercentTolerance(0.833);
-		xAngle.setSetpoint(xBoiler);
-		xStrafe = new PIDController(0.8,0.01,0,visionSourceX,(a) -> {drive.mecanumDrive_Cartesian(a, 0, 0, 0);});
-		xStrafe.setInputRange(0, xMax);
-		xStrafe.setPercentTolerance(0.833);
-		xStrafe.setSetpoint(xLift);
-		yDrive = new PIDController(0.8,0.01,0,new VisionSourceY(),(a) -> {drive.mecanumDrive_Cartesian(0, a, 0, 0);});
-		yDrive.setInputRange(0, yMax);
-		yDrive.setPercentTolerance(0.833);
+		
+		xBoilerController = new PIDController(0.8,0.01,0,new VisionSourceX(boilerVision),
+				(a) -> {drive.mecanumDrive_Cartesian(0, 0, a, 0);});
+		xBoilerController.setInputRange(0, xMax);
+		xBoilerController.setPercentTolerance(0.833);
+		xBoilerController.setSetpoint(xBoilerIdeal);
+		yBoilerController = new PIDController(0.8,0.01,0,new VisionSourceY(boilerVision),
+				(a) -> {drive.mecanumDrive_Cartesian(0, a, 0, 0);});
+		yBoilerController.setInputRange(0, yMax);
+		yBoilerController.setPercentTolerance(0.833);
+		yBoilerController.setSetpoint(yBoilerIdeal);
+		
+		xGearController = new PIDController(0.8,0.01,0,new VisionSourceX(gearVision),
+				(a) -> {drive.mecanumDrive_Cartesian(a, 0, 0, 0);});
+		xGearController.setInputRange(0, xMax);
+		xGearController.setPercentTolerance(0.833);
+		xGearController.setSetpoint(xLiftIdeal);
+		yGearController = new PIDController(0.8,0.01,0,new VisionSourceY(gearVision),
+				(a) -> {drive.mecanumDrive_Cartesian(0, a, 0, 0);});
+		yGearController.setInputRange(0, yMax);
+		yGearController.setPercentTolerance(0.833);
+		yGearController.setSetpoint(yLiftIdeal);
 	}
 	
 	public double getAbsoluteIMUAngle(){
@@ -98,9 +103,10 @@ public class VisionController {
 	
 	public void stopAll(){
 		autoState = 0;
-		xAngle.disable();
-		xStrafe.disable();
-		yDrive.disable();
+		xBoilerController.disable();
+		yBoilerController.disable();
+		xGearController.disable();
+		yGearController.disable();
 		angleController.disable();
 	}
 	
@@ -108,24 +114,24 @@ public class VisionController {
 		return autoState;
 	}
 	
-	private boolean linedUpToLiftX(){
-		return numberInTolerance(vision.getX(),xLift,xTolerance);
+	public boolean linedUpToLiftX(){
+		return xGearController.onTarget();
 	}
-	private boolean linedUpToLiftY(){
-		return numberInTolerance(vision.getY(),yLift,yTolerance);
+	public boolean linedUpToLiftY(){
+		return yGearController.onTarget();
 	}
 
 	public boolean linedUpToBoiler(){
 		return linedUpToBoilerX() && linedUpToBoilerY();
 	}
-	private boolean linedUpToBoilerX(){
-		return numberInTolerance(vision.getX(),xBoiler,xTolerance);
+	public boolean linedUpToBoilerX(){
+		return xBoilerController.onTarget();
 	}
-	private boolean linedUpToBoilerY(){
-		return numberInTolerance(vision.getY(),yBoiler,yTolerance);
+	public boolean linedUpToBoilerY(){
+		return yBoilerController.onTarget();
 	}
 	public boolean correctPegAngle(){
-		return numberInTolerance(getAbsoluteIMUAngle(), closestIdealAngle, gyroTolerance);
+		return angleController.onTarget();
 	}
 	
 	/**
@@ -161,51 +167,49 @@ public class VisionController {
 			if (angleController.onTarget()){
 				angleController.disable();
 				drive.mecanumDrive_Cartesian(0, 0, 0, 0);
-				xStrafe.enable();
+				xGearController.enable();
 				autoState = 102;
 			}
 			break;
 		case(102):
 			//adjust to optimal x (horizontal positioning) value for lift
-			if(xStrafe.onTarget()){
-				xStrafe.disable();
+			if(xGearController.onTarget()){
+				xGearController.disable();
 				drive.mecanumDrive_Cartesian(0, 0, 0, 0);
-				yDrive.setSetpoint(yLift);
-				yDrive.enable();
+				yGearController.enable();
 				autoState = 103;
 			}
 			
 			break;
 		case(103):
 			//adjust to optimal y (distance) value for lift
-			if(yDrive.onTarget()){
+			if(yGearController.onTarget()){
 				//done
-				yDrive.disable();
+				yGearController.disable();
 				drive.mecanumDrive_Cartesian(0, 0, 0, 0);
 				autoState = 0;
 			}
 			break;
 			
 		case(200):
-			xAngle.enable();
+			xBoilerController.enable();
 			autoState = 201;
 			break;
 			
 		case(201):
 			//start boiler sequence, center horizontally
-			if(xAngle.onTarget()){
-				xAngle.disable();
+			if(xBoilerController.onTarget()){
+				xBoilerController.disable();
 				drive.mecanumDrive_Cartesian(0, 0, 0, 0);
-				yDrive.setSetpoint(xBoiler);
-				yDrive.enable();
+				yBoilerController.enable();
 				autoState = 202;
 			}
 			break;
 		case(202):
 			//go to ideal distance
-			if(yDrive.onTarget()){
+			if(yBoilerController.onTarget()){
 				//done
-				yDrive.disable();
+				yBoilerController.disable();
 				drive.mecanumDrive_Cartesian(0, 0, 0, 0);
 				autoState = 0;
 			}
@@ -220,6 +224,7 @@ public class VisionController {
 	 * @param maxSpeed how quickly to correct for error. high values could be unstable. between 0 and 1.
 	 * @param maxSensor maximum sensor value (xMax or yMax), used to normalize
 	 * @return normalized output to give to motor controller
+	 * @deprecated use built in PID controller
 	 */
 	private double pLoop(double sensor, double target, double maxSpeed, double maxSensor){
 		double error = target - sensor;
@@ -230,14 +235,16 @@ public class VisionController {
 	/**
 	 * @param value this is the input
 	 * @return val-tol < tar < val+tol
+	 * @deprecated use built in PID controller
 	 */
 	private boolean numberInTolerance(double value, double target, double tolerance){
 		return (value - tolerance < target) && (target < value + tolerance);
 	}
 	
 	class VisionSourceX implements PIDSource{
-		public VisionSourceX(){
-			//nothing to instantiate
+		VisionServer vision;
+		public VisionSourceX(VisionServer vision){
+			this.vision = vision;
 		}
 
 		@Override
@@ -257,8 +264,9 @@ public class VisionController {
 	}
 	
 	class VisionSourceY implements PIDSource{
-		public VisionSourceY(){
-			//nothing to instantiate
+		VisionServer vision;
+		public VisionSourceY(VisionServer vision){
+			this.vision = vision;
 		}
 
 		@Override
