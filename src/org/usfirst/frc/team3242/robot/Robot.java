@@ -3,6 +3,7 @@ package org.usfirst.frc.team3242.robot;
 import com.ctre.CANTalon;
 import com.ctre.PigeonImu;
 
+import edu.wpi.first.wpilibj.AnalogInput;
 import edu.wpi.first.wpilibj.CounterBase;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
@@ -10,8 +11,8 @@ import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.PIDController;
-import edu.wpi.first.wpilibj.PIDController.Tolerance;
 import edu.wpi.first.wpilibj.RobotDrive;
+import edu.wpi.first.wpilibj.Spark;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
@@ -30,6 +31,7 @@ public class Robot extends IterativeRobot {
 
 	Shooter shooter;
 	BallPickup ballPickup;
+	GearDropper gearDropper;
 	Toggle shooterToggle;
 	Joystick controller;
 	VisionServer gearVision, boilerVision;
@@ -76,6 +78,7 @@ public class Robot extends IterativeRobot {
 		shooter = new Shooter(new CANTalon(4), new Encoder(0, 1, false, CounterBase.EncodingType.k4X), new CANTalon(5));
 		shooter.setSpeedTolerance(20);
 		ballPickup = new BallPickup(new CANTalon(6), new CANTalon(7));
+		gearDropper = new GearDropper(new Spark(1), new AnalogInput(1));
 		
 		gearVision = new VisionServer("A");
 		boilerVision = new VisionServer("B");
@@ -287,18 +290,21 @@ public class Robot extends IterativeRobot {
 	public void teleopPeriodic() {
 		if(visionController.getAutoState() != 0)
 			drive.mecanumDrive_Cartesian(controller.getRawAxis(4), controller.getRawAxis(1), controller.getRawAxis(0), 0);
+		
 		if(controller.getRawButton(4)){
 			shooterToggle.toggle();
 		}
+		
 		if (shooterToggle.getStatus() && !shooter.isEnabled()){
 			shooter.enable();
 			shooter.setRPM(5000); //make adjustable by smartdashboard?
-			
 		}
 		else if (shooterToggle.getStatus() && shooter.isEnabled()){
 			shooter.disable();
 		}
 		shooter.elevate();
+		
+		gearDropper.open(controller.getRawButton(1));
 		
 		ballPickup.set(controller.getRawButton(2));
 	}
