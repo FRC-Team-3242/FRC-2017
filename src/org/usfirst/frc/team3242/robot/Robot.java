@@ -8,11 +8,13 @@ import edu.wpi.first.wpilibj.CounterBase;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Encoder;
+import edu.wpi.first.wpilibj.GenericHID.Hand;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.PIDController;
 import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.Spark;
+import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
@@ -33,7 +35,7 @@ public class Robot extends IterativeRobot {
 	BallPickup ballPickup;
 	GearDropper gearDropper;
 	Toggle shooterToggle;
-	Joystick controller;
+	XboxController controller;
 	VisionServer gearVision, boilerVision;
 	VisionController visionController;
 	Encoder driveEncoder;
@@ -74,7 +76,7 @@ public class Robot extends IterativeRobot {
 		angleController.setPercentTolerance(1);
 		angleController.setContinuous();
 		
-		controller = new Joystick(1);
+		controller = new XboxController(1);
 		shooter = new Shooter(new CANTalon(4), new Encoder(0, 1, false, CounterBase.EncodingType.k4X), new CANTalon(5));
 		shooter.setSpeedTolerance(20);
 		ballPickup = new BallPickup(new CANTalon(6), new CANTalon(7));
@@ -288,10 +290,12 @@ public class Robot extends IterativeRobot {
 	
 	@Override
 	public void teleopPeriodic() {
-		if(visionController.getAutoState() != 0)
-			drive.mecanumDrive_Cartesian(controller.getRawAxis(4), controller.getRawAxis(1), controller.getRawAxis(0), 0);
+		if(visionController.getAutoState() != 0){
+			drive.mecanumDrive_Cartesian(controller.getX(Hand.kLeft),
+					controller.getY(Hand.kLeft), controller.getX(Hand.kRight), 0);
+		}
 		
-		if(controller.getRawButton(4)){
+		if(controller.getYButton()){
 			shooterToggle.toggle();
 		}
 		
@@ -304,9 +308,9 @@ public class Robot extends IterativeRobot {
 		}
 		shooter.elevate();
 		
-		gearDropper.open(controller.getRawButton(1));
+		gearDropper.open(controller.getAButton());
 		
-		ballPickup.set(controller.getRawButton(2));
+		ballPickup.set(controller.getBButton());
 	}
 
 	
