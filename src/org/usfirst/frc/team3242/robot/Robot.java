@@ -34,6 +34,7 @@ public class Robot extends IterativeRobot {
 	Shooter shooter;
 	BallPickup ballPickup;
 	GearDropper gearDropper;
+	Climber climber;
 	Toggle shooterToggle;
 	XboxController controller;
 	VisionServer gearVision, boilerVision;
@@ -81,6 +82,7 @@ public class Robot extends IterativeRobot {
 		shooter.setSpeedTolerance(20);
 		ballPickup = new BallPickup(new CANTalon(6), new CANTalon(7));
 		gearDropper = new GearDropper(new Spark(1), new AnalogInput(1));
+		climber = new Climber(new CANTalon(8));
 		
 		gearVision = new VisionServer("A");
 		boilerVision = new VisionServer("B");
@@ -307,6 +309,8 @@ public class Robot extends IterativeRobot {
 			shooter.disable();
 		}
 		shooter.elevate();
+		
+		climber.climb(controller.getPOV() == 0, controller.getPOV() == 180);//up, down
 		
 		gearDropper.open(controller.getAButton());
 		
