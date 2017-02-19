@@ -44,12 +44,8 @@ public class Robot extends IterativeRobot {
 	PigeonImu imu;
 	PigeonImu.GeneralStatus genStatus;
 	PIDController angleController;
-	boolean turnOne;
-	boolean turnTwo;
-	boolean readyToTurn;
-	boolean startedTracking;
 	int turnScalar;
-	int i;
+	int autoState;
 
 	
 	double[] ypr;
@@ -108,11 +104,7 @@ public class Robot extends IterativeRobot {
 		}else{
 			turnScalar = 1;
 		}
-		turnOne = false;
-		turnTwo = false;
-		readyToTurn = false;
-		startedTracking = false;
-		i = 0;
+		autoState = 0;
 	}
 
 	@Override
@@ -128,14 +120,14 @@ public class Robot extends IterativeRobot {
 		
 		case shootingAuto:
 			
-			switch (i){
+			switch (autoState){
 			
 			case 0:
 				if (driveEncoder.getDistance() < 12){
 					drive.mecanumDrive_Cartesian(0, 0.75, 0, 0);
 				}
 				else{
-					i++;
+					autoState++;
 				}
 				
 			case 1:
@@ -143,7 +135,7 @@ public class Robot extends IterativeRobot {
 					drive.mecanumDrive_Cartesian(0, 0, 0.75 * turnScalar, 0);
 				}
 				else{
-					i++;
+					autoState++;
 					driveEncoder.reset();
 				}
 			case 2:
@@ -151,14 +143,14 @@ public class Robot extends IterativeRobot {
 					drive.mecanumDrive_Cartesian(0, 0.75, 0, 0);
 				}
 				else{
-					i++;
+					autoState++;
 				}
 			case 3:
-				if (currentAngle < 135 && !turnTwo){
+				if (currentAngle < 135){
 					drive.mecanumDrive_Cartesian(0, 0, 0.75 * turnScalar, 0);
 				}
 				else{
-					i++;
+					autoState++;
 					driveEncoder.reset();
 				}
 			case 4:
@@ -166,11 +158,11 @@ public class Robot extends IterativeRobot {
 					drive.mecanumDrive_Cartesian(0, 0.75, 0, 0);
 				}
 				else{
-					i++;
+					autoState++;
 				}
 			case 5:
 				visionController.startBoilerTracking();
-				i++;
+				autoState++;
 			case 6:
 				visionController.update();
 				break;
@@ -179,21 +171,21 @@ public class Robot extends IterativeRobot {
 			
 			
 		case rightGearAuto:
-			switch (i){
+			switch (autoState){
 			case 0:
 				//go forward 12 inches
 				if (driveEncoder.getDistance() < 12){ 
 					drive.mecanumDrive_Cartesian(0, 0.75, 0, 0); // go forward at 75% speed
 				}
 				else{
-					i++;
+					autoState++;
 				}
 			case 1:
 				if (currentAngle <= 30){ // turn 30 degrees
 					drive.mecanumDrive_Cartesian(0, 0, 0.75 * turnScalar, 0); // rotate right at 75% speed
 				}
 				else{
-					i++;
+					autoState++;
 					driveEncoder.reset();
 				}
 			case 2:
@@ -201,14 +193,14 @@ public class Robot extends IterativeRobot {
 					drive.mecanumDrive_Cartesian(0, 0.75, 0, 0); // go forward at 75% speed
 				}
 				else{
-					i++;
+					autoState++;
 				}
 			case 3:
 				if (currentAngle < 295 || currentAngle > 305){ // rotate to around 300 degrees
 					drive.mecanumDrive_Cartesian(0, 0, -0.75 * turnScalar, 0); // rotate left at 75% speed
 				}
 				else{
-					i++;
+					autoState++;
 					driveEncoder.reset();
 				}
 			case 4:
@@ -216,11 +208,11 @@ public class Robot extends IterativeRobot {
 					drive.mecanumDrive_Cartesian(0, 0.75, 0, 0); // go forward at 75% speed
 				}
 				else{
-					i++;
+					autoState++;
 				}
 			case 5:
 				visionController.startLiftTracking();
-				i++;
+				autoState++;
 			case 6:
 				visionController.update();
 				// to_do: use auto gear placing function
@@ -228,20 +220,20 @@ public class Robot extends IterativeRobot {
 			}
 		case leftGearAuto:
 			//go forward 78.5 inches
-		switch (i){
+		switch (autoState){
 			case 0:
 				if (driveEncoder.getDistance() < 78.5){ 
 					drive.mecanumDrive_Cartesian(0, 0.75, 0, 0); // go forward at 75% speed
 				}
 				else{
-					i++;
+					autoState++;
 				}
 			case 1:
 				if (currentAngle <= 60){ // turn 60 degrees
 					drive.mecanumDrive_Cartesian(0, 0, 0.75 * turnScalar, 0); // rotate at 75% speed
 				}
 				else{
-					i++;
+					autoState++;
 					driveEncoder.reset();
 				}
 			case 2:
@@ -249,11 +241,11 @@ public class Robot extends IterativeRobot {
 					drive.mecanumDrive_Cartesian(0, 0.75, 0, 0); // go forward at 75% speed
 				}
 				else{
-					i++;
+					autoState++;
 				}
 			case 3:
 				visionController.startLiftTracking();
-				i++;	
+				autoState++;	
 			case 4:
 				visionController.update();
 				
@@ -262,7 +254,7 @@ public class Robot extends IterativeRobot {
 		}
 		case frontGearAuto:
 			default:
-				switch (i){
+				switch (autoState){
 				
 				case 0:
 					// 1. Move forward
@@ -270,11 +262,11 @@ public class Robot extends IterativeRobot {
 						drive.mecanumDrive_Cartesian(0, 0.75, 0, 0); // go forward at 75% speed
 					}
 					else{
-						i++;
+						autoState++;
 					}
 				case 1:
 						visionController.startLiftTracking();
-						i++;
+						autoState++;
 				case 2:
 					visionController.update();
 					// to_do: 2. Use auto gear placing function

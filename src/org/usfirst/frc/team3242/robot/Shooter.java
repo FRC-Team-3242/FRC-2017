@@ -23,6 +23,7 @@ public class Shooter {
 	private Encoder encoder;
 	private double rps; // is RPS instead of RPM, because encoder returns in distance per second. Setters and getter are 
 						// converted to and from RPM for easier human input and reading
+	private final double maxRPS = 5310;
 	private PIDController pid;
 	private double speedTolerance; // in percentages
 
@@ -37,12 +38,13 @@ public class Shooter {
 		this.encoder.setDistancePerPulse(1/40); // so one rotation = one unit for rate
 		this.encoder.setPIDSourceType(PIDSourceType.kRate);
 		isEnabled = false;
-		pid = new PIDController(0.7, 0.01, 0, encoder, shooter); //need to enter PID values
-		pid.setInputRange(-5310, 5310); //need to test
+		//add f parameter as 1/maxRPS
+		pid = new PIDController(0.7, 0.01, 0, encoder, shooter); //need to configure PID values
+		pid.setInputRange(-maxRPS, maxRPS); //need to test
 		pid.setOutputRange(-100, 100);
 		speedTolerance = 5;
 		pid.setPercentTolerance(speedTolerance);
-		
+		shooter.setSafetyEnabled(false);
 	}
 
 	
