@@ -86,6 +86,8 @@ public class Robot extends IterativeRobot {
 				imu, new Relay(3));
 		
 		shooterToggle = new Toggle();
+
+		shooter.setRPM(5000); //make adjustable by smartdashboard?
 	}
 	
 	public void sendInfoToDashboard(){
@@ -130,6 +132,7 @@ public class Robot extends IterativeRobot {
 				else{
 					autoState++;
 				}
+				break;
 				
 			case 1:
 				if (currentAngle  < 45){
@@ -139,6 +142,7 @@ public class Robot extends IterativeRobot {
 					autoState++;
 					driveEncoder.reset();
 				}
+				break;
 			case 2:
 				if (driveEncoder.getDistance() < 53.5){
 					drive.mecanumDrive_Cartesian(0, 0.75, 0, 0);
@@ -146,6 +150,7 @@ public class Robot extends IterativeRobot {
 				else{
 					autoState++;
 				}
+				break;
 			case 3:
 				if (currentAngle < 135){
 					drive.mecanumDrive_Cartesian(0, 0, 0.75 * turnScalar, 0);
@@ -154,6 +159,7 @@ public class Robot extends IterativeRobot {
 					autoState++;
 					driveEncoder.reset();
 				}
+				break;
 			case 4:
 				if (driveEncoder.getDistance() < 30){
 					drive.mecanumDrive_Cartesian(0, 0.75, 0, 0);
@@ -161,11 +167,26 @@ public class Robot extends IterativeRobot {
 				else{
 					autoState++;
 				}
+				break;
 			case 5:
 				visionController.startBoilerTracking();
 				autoState++;
+				break;
 			case 6:
+				if(visionController.linedUpToBoiler()){
+					autoState++;
+				}
 				visionController.update();
+				break;
+			case 7:
+				if(visionController.linedUpToBoiler()){
+					if (!shooter.isEnabled()){
+						shooter.enable();
+					}
+				}
+				else{
+					autoState--;
+				}
 				break;
 				
 			}
@@ -181,6 +202,7 @@ public class Robot extends IterativeRobot {
 				else{
 					autoState++;
 				}
+				break;
 			case 1:
 				if (currentAngle <= 30){ // turn 30 degrees
 					drive.mecanumDrive_Cartesian(0, 0, 0.75 * turnScalar, 0); // rotate right at 75% speed
@@ -189,6 +211,7 @@ public class Robot extends IterativeRobot {
 					autoState++;
 					driveEncoder.reset();
 				}
+				break;
 			case 2:
 				if (driveEncoder.getDistance() < 66.25){ // go forward 66.25 inches
 					drive.mecanumDrive_Cartesian(0, 0.75, 0, 0); // go forward at 75% speed
@@ -196,6 +219,7 @@ public class Robot extends IterativeRobot {
 				else{
 					autoState++;
 				}
+				break;
 			case 3:
 				if (currentAngle < 295 || currentAngle > 305){ // rotate to around 300 degrees
 					drive.mecanumDrive_Cartesian(0, 0, -0.75 * turnScalar, 0); // rotate left at 75% speed
@@ -204,6 +228,7 @@ public class Robot extends IterativeRobot {
 					autoState++;
 					driveEncoder.reset();
 				}
+				break;
 			case 4:
 				if (driveEncoder.getDistance() < 42){
 					drive.mecanumDrive_Cartesian(0, 0.75, 0, 0); // go forward at 75% speed
@@ -211,9 +236,11 @@ public class Robot extends IterativeRobot {
 				else{
 					autoState++;
 				}
+				break;
 			case 5:
 				visionController.startLiftTracking();
 				autoState++;
+				break;
 			case 6:
 				visionController.update();
 				// to_do: use auto gear placing function
@@ -229,6 +256,7 @@ public class Robot extends IterativeRobot {
 				else{
 					autoState++;
 				}
+				break;
 			case 1:
 				if (currentAngle <= 60){ // turn 60 degrees
 					drive.mecanumDrive_Cartesian(0, 0, 0.75 * turnScalar, 0); // rotate at 75% speed
@@ -237,6 +265,7 @@ public class Robot extends IterativeRobot {
 					autoState++;
 					driveEncoder.reset();
 				}
+				break;
 			case 2:
 				if (driveEncoder.getDistance() < 25){
 					drive.mecanumDrive_Cartesian(0, 0.75, 0, 0); // go forward at 75% speed
@@ -244,14 +273,14 @@ public class Robot extends IterativeRobot {
 				else{
 					autoState++;
 				}
+				break;
 			case 3:
 				visionController.startLiftTracking();
-				autoState++;	
+				autoState++;
+				break;
 			case 4:
 				visionController.update();
-				
-			// to_do: use auto gear placing function (done?)
-			break;		
+				break;		
 		}
 		case frontGearAuto:
 			default:
@@ -265,9 +294,11 @@ public class Robot extends IterativeRobot {
 					else{
 						autoState++;
 					}
+					break;
 				case 1:
 						visionController.startLiftTracking();
 						autoState++;
+						break;
 				case 2:
 					visionController.update();
 					// to_do: 2. Use auto gear placing function
@@ -317,7 +348,6 @@ public class Robot extends IterativeRobot {
 		
 		if (shooterToggle.getStatus() && !shooter.isEnabled()){
 			shooter.enable();
-			shooter.setRPM(5000); //make adjustable by smartdashboard?
 		}
 		else if (shooterToggle.getStatus() && shooter.isEnabled()){
 			shooter.disable();
