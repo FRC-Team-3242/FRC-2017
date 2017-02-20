@@ -10,8 +10,8 @@ import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.GenericHID.Hand;
 import edu.wpi.first.wpilibj.IterativeRobot;
-import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.PIDController;
+import edu.wpi.first.wpilibj.Relay;
 import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.Spark;
 import edu.wpi.first.wpilibj.XboxController;
@@ -82,7 +82,8 @@ public class Robot extends IterativeRobot {
 		
 		gearVision = new VisionServer("A");
 		boilerVision = new VisionServer("B");
-		visionController = new VisionController(gearVision, boilerVision, drive, angleController, imu);
+		visionController = new VisionController(gearVision, boilerVision, drive, angleController,
+				imu, new Relay(3));
 		
 		shooterToggle = new Toggle();
 	}
@@ -281,15 +282,36 @@ public class Robot extends IterativeRobot {
 		visionController.stopAll();
 		shooter.disable();
 	}
-	
+	/**
+	 * LBumper:			boiler vision tracking
+	 * RBumper:			lift vision tracking
+	 * X:				stop vision tracking
+	 * start button:	search for targets
+	 * A:				toggle shooter
+	 * B:				run ball pick up
+	 * Y:				drop gear
+	 */
 	@Override
 	public void teleopPeriodic() {
-		if(visionController.getAutoState() != 0){
+		if(visionController.getAutoState() == 0){
+			if(controller.getBumper(Hand.kLeft)){
+				visionController.startBoilerTracking();
+			}
+			if(controller.getBumper(Hand.kRight)){
+				visionController.startLiftTracking();
+			}
+			if(controller.getStartButton()){
+				visionController.search();
+			}
 			drive.mecanumDrive_Cartesian(controller.getX(Hand.kLeft),
 					controller.getY(Hand.kLeft), controller.getX(Hand.kRight), 0);
 		}
 		
-		if(controller.getYButton()){
+		if(controller.getXButton()){
+			visionController.stopAll();
+		}
+		
+		if(controller.getAButton()){
 			shooterToggle.toggle();
 		}
 		
@@ -304,9 +326,13 @@ public class Robot extends IterativeRobot {
 		
 		climber.climb(controller.getPOV() == 0, controller.getPOV() == 180);//up, down
 		
-		gearDropper.open(controller.getAButton());
+		gearDropper.open(controller.getYButton());
 		
 		ballPickup.set(controller.getBButton());
+		
+		visionController.update();
+		
+		sendInfoToDashboard();
 	}
 
 	

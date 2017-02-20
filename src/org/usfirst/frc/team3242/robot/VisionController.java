@@ -5,6 +5,8 @@ import com.ctre.PigeonImu;
 import edu.wpi.first.wpilibj.PIDController;
 import edu.wpi.first.wpilibj.PIDSource;
 import edu.wpi.first.wpilibj.PIDSourceType;
+import edu.wpi.first.wpilibj.Relay;
+import edu.wpi.first.wpilibj.Relay.Value;
 import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.Timer;
 
@@ -12,6 +14,7 @@ public class VisionController {
 	
 	private RobotDrive drive;
 	private PIDController angleController;
+	private Relay lights;
 	
 	//camera resolution
 	private final double xMax = 640;
@@ -43,20 +46,25 @@ public class VisionController {
 	 * 200-299	: boiler
 	 */
 	private int autoState;
-	private double closestIdealAngle;
 	private Timer autoTimer;
 	int turningDirection;
 	double currentAngle;
 	PigeonImu imu;
+	VisionServer boilerVision;
+	VisionServer gearVision;
 	
-	public VisionController(VisionServer gearVision, VisionServer boilerVision, RobotDrive drive, PIDController angleController, PigeonImu imu){
+	public VisionController(VisionServer gearVision, VisionServer boilerVision,
+			RobotDrive drive, PIDController angleController, PigeonImu imu, Relay lights){
 		this.drive = drive;
 		autoState = 0;
-		closestIdealAngle = 0;
 		autoTimer = new Timer();
 		autoTimer.start();
 		this.angleController = angleController;
 		this.imu = imu;
+		this.boilerVision = boilerVision;
+		this.gearVision = gearVision;
+		this.lights = lights;
+		lights.setDirection(Relay.Direction.kForward);
 		
 		xBoilerController = new PIDController(0.8,0.01,0,new VisionSourceX(boilerVision),
 				(a) -> {drive.mecanumDrive_Cartesian(0, 0, a, 0);});
@@ -92,16 +100,34 @@ public class VisionController {
 		return yaw;
 	}
 	
+	private void turnOnLights(){
+		lights.set(Value.kOn);
+	}
 	
 	public void startLiftTracking(){
+		gearVision.enable();
+		boilerVision.disable();
+		turnOnLights();
 		autoState = 100;
 	}
 	
 	public void startBoilerTracking(){
+		boilerVision.enable();
+		gearVision.disable();
+		turnOnLights();
 		autoState = 200;
 	}
 	
+	public void search(){
+		gearVision.enable();
+		boilerVision.enable();
+		turnOnLights();
+	}
+	
 	public void stopAll(){
+		gearVision.disable();
+		boilerVision.disable();
+		lights.set(Value.kOff);
 		autoState = 0;
 		xBoilerController.disable();
 		yBoilerController.disable();
@@ -187,7 +213,7 @@ public class VisionController {
 				//done
 				yGearController.disable();
 				drive.mecanumDrive_Cartesian(0, 0, 0, 0);
-				autoState = 0;
+				stopAll();
 			}
 			break;
 			
@@ -211,7 +237,7 @@ public class VisionController {
 				//done
 				yBoilerController.disable();
 				drive.mecanumDrive_Cartesian(0, 0, 0, 0);
-				autoState = 0;
+				stopAll();
 			}
 			break;
 		}

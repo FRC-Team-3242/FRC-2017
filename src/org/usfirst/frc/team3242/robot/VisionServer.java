@@ -63,6 +63,13 @@ public class VisionServer {
     	return found;
 	}
 	
+	public void enable(){
+		table.putBoolean(tablePrefix + "enabled", true);
+	}
+	
+	public void disable(){
+		table.putBoolean(tablePrefix + "enabled", false);
+	}
 	
 	public double getX(){
 		return getAverage(xHistory);
