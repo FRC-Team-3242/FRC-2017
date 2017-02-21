@@ -6,6 +6,7 @@ public class BallPickup{
 	
 	private CANTalon pickup;
 	private CANTalon elevator;
+	private final double speed = 0.5;
 	
 	public BallPickup(CANTalon pickup, CANTalon elevator){
 		this.pickup = pickup;
@@ -13,12 +14,22 @@ public class BallPickup{
 	}
 	
 	public void set(boolean enable){
-		double speed = 1;
-		if(!enable){
-			speed = 0;
+		set(enable, false);
+	}
+	
+	public void set(boolean up, boolean down){
+		if(up){
+			set(speed);
+		}else if(down){
+			set(-speed);
+		}else{
+			set(0);
 		}
-		pickup.set(speed);
-		elevator.set(speed);
+	}
+	
+	public void set(double s){
+		pickup.set(s);
+		elevator.set(s);
 	}
 }
 

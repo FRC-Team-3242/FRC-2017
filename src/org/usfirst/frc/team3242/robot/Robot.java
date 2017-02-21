@@ -8,6 +8,7 @@ import edu.wpi.first.wpilibj.CounterBase;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Encoder;
+import edu.wpi.first.wpilibj.GenericHID.HIDType;
 import edu.wpi.first.wpilibj.GenericHID.Hand;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.PIDController;
@@ -37,7 +38,8 @@ public class Robot extends IterativeRobot {
 	GearDropper gearDropper;
 	Climber climber;
 	Toggle shooterToggle;
-	XboxController controller;
+	XboxController primaryController;
+	XboxController secondaryController;
 	VisionServer gearVision, boilerVision;
 	VisionController visionController;
 	Encoder driveEncoder;
@@ -71,8 +73,8 @@ public class Robot extends IterativeRobot {
 		angleController.setInputRange(0, 360);
 		angleController.setPercentTolerance(1);
 		angleController.setContinuous();
-		//5678 ccw start bl
-		controller = new XboxController(1);
+		primaryController = new XboxController(1);
+		secondaryController = new XboxController(2);
 		shooter = new Shooter(new CANTalon(3),
 				new Encoder(9, 8, false, CounterBase.EncodingType.k2X), new Spark(0));
 		shooter.setSpeedTolerance(20);
@@ -98,6 +100,8 @@ public class Robot extends IterativeRobot {
 		SmartDashboard.putNumber("heading", visionController.getAbsoluteIMUAngle());
 		SmartDashboard.putNumber("encoder dist", shooter.getdist());
 		SmartDashboard.putNumber("drive dist", driveEncoder.getDistance());
+		SmartDashboard.putNumber("gear dropper potentiometer", gearDropper.getAvgPotentiometerVal());
+		SmartDashboard.putNumber("gear dropper potentiometer", gearDropper.getPotentiometerVal());
 	}
 	
 
@@ -106,31 +110,47 @@ public class Robot extends IterativeRobot {
 		visionController.stopAll();
 		shooter.disable();
 	}
+	
+	@Override
+	public void teleopPeriodic() {
+		if(primaryController.getType() == HIDType.kHIDGamepad){
+			primaryControl();
+		}
+		if(secondaryController.getType() == HIDType.kHIDGamepad){
+			secondaryControl();
+		}
+		visionController.update();
+		sendInfoToDashboard();
+	}
+
 	/**
+	 * LTrigger:		manually control shooter elevator
+	 * RTrigger:		manually control shooter
+	 * 
 	 * LBumper:			boiler vision tracking
 	 * RBumper:			lift vision tracking
-	 * X:				stop vision tracking
 	 * start button:	search for targets
+	 * X:				stop all vision tracking
+	 * 
 	 * A:				toggle shooter
 	 * B:				run ball pick up
 	 * Y:				drop gear
 	 */
-	@Override
-	public void teleopPeriodic() {
+	public void primaryControl(){
 		if(visionController.getAutoState() == 0){
-			if(controller.getBumper(Hand.kLeft)){
+			if(primaryController.getBumper(Hand.kLeft)){
 				visionController.startBoilerTracking();
 			}
-			if(controller.getBumper(Hand.kRight)){
+			if(primaryController.getBumper(Hand.kRight)){
 				visionController.startLiftTracking();
 			}
-			if(controller.getStartButton()){
+			if(primaryController.getStartButton()){
 				visionController.search();
 			}
 			
-			double x = controller.getRawAxis(0);
-			double y = controller.getRawAxis(1);
-			double r = controller.getRawAxis(4);
+			double x = primaryController.getRawAxis(0);
+			double y = primaryController.getRawAxis(1);
+			double r = primaryController.getRawAxis(4);
 			if(Math.abs(x) < 0.1){
 				x = 0;
 			}
@@ -141,17 +161,16 @@ public class Robot extends IterativeRobot {
 				r = 0;
 			}
 			drive.mecanumDrive_Cartesian(x, y, r, 0);
-			//drive.mecanumDrive_Cartesian(controller.getX(Hand.kLeft),controller.getY(Hand.kLeft), controller.getX(Hand.kRight), 0);
 		}
 		
-		shooter.manualShooter(controller.getRawAxis(3));
-		shooter.manualElevator(-controller.getRawAxis(2));
+		shooter.overrideShooter(primaryController.getRawAxis(3));	//RT
+		shooter.overrideElevator(-primaryController.getRawAxis(2));	//LT
 		
-		if(controller.getXButton()){
+		if(primaryController.getXButton()){
 			visionController.stopAll();
 		}
 		
-		if(controller.getAButton()){
+		if(primaryController.getAButton()){
 			shooterToggle.toggle();
 		}
 		
@@ -163,15 +182,19 @@ public class Robot extends IterativeRobot {
 		}
 		shooter.elevate();
 		
-		climber.climb(controller.getPOV() == 0, controller.getPOV() == 180);//up, down
+		climber.climb(primaryController.getPOV() == 0, primaryController.getPOV() == 180);//up, down
 		
-		gearDropper.open(controller.getYButton());
+		gearDropper.open(primaryController.getYButton());
 		
-		ballPickup.set(controller.getBButton());
-		
-		visionController.update();
-		
-		sendInfoToDashboard();
+		ballPickup.set(primaryController.getBButton());
+	}
+	
+	public void secondaryControl(){
+		shooter.overrideShooter(secondaryController.getRawAxis(3));		//RT
+		shooter.overrideElevator(-secondaryController.getRawAxis(2));	//LT
+		gearDropper.override(-secondaryController.getRawAxis(1));		//LY
+		climber.climb(secondaryController.getYButton(), secondaryController.getAButton());
+		ballPickup.set(secondaryController.getRawAxis(5));				//RY
 	}
 	
 	@Override

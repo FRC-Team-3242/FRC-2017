@@ -167,6 +167,8 @@ public class VisionController {
 	 * this function executes the controller's state machine
 	 */
 	public void update(){
+		gearVision.update();
+		boilerVision.update();
 		switch(autoState){
 		case(0):
 			//do nothing

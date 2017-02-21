@@ -29,7 +29,10 @@ public class Shooter {
 	private double speedTolerance; // in percentages
 
 	/**
-	 * @param Motor controller for motor for shooter
+	 * 
+	 * @param shooter Motor controller for motor for shooter
+	 * @param encoder Encoder for shooter speed
+	 * @param elevator shooter's elevator in the hopper
 	 */
 	public Shooter(CANTalon shooter, Encoder encoder, Spark elevator) {
 		this.encoder = encoder;
@@ -39,8 +42,7 @@ public class Shooter {
 		this.encoder.setDistancePerPulse(1/40); // so one rotation = one unit for rate
 		this.encoder.setPIDSourceType(PIDSourceType.kRate);
 		isEnabled = false;
-		//add f parameter as 1/maxRPS
-		pid = new PIDController(0.7, 0.01, 0, encoder, shooter); //need to configure PID values
+		pid = new PIDController(0.7, 0.01, 0, 1 / maxRPS, encoder, shooter); //need to configure PID values
 		pid.setInputRange(-maxRPS, maxRPS); //need to test
 		pid.setOutputRange(-100, 100);
 		speedTolerance = 5;
@@ -48,11 +50,11 @@ public class Shooter {
 		shooter.setSafetyEnabled(false);
 	}
 
-	public void manualShooter(double s){
+	public void overrideShooter(double s){
 		shooter.set(s);
 	}
 	
-	public void manualElevator(double s){
+	public void overrideElevator(double s){
 		elevator.set(s);
 	}
 	
