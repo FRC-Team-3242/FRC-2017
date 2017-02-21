@@ -97,10 +97,10 @@ public class Robot extends IterativeRobot {
 		SmartDashboard.putBoolean("Gear in sight", gearVision.targetFound());
 		SmartDashboard.putBoolean("Boiler in sight", boilerVision.targetFound());
 		SmartDashboard.putNumber("shooter RPM", shooter.getRPM());
+		SmartDashboard.putNumber("shooter dist", shooter.getdist());
 		SmartDashboard.putNumber("heading", visionController.getAbsoluteIMUAngle());
-		SmartDashboard.putNumber("encoder dist", shooter.getdist());
 		SmartDashboard.putNumber("drive dist", driveEncoder.getDistance());
-		SmartDashboard.putNumber("gear dropper potentiometer", gearDropper.getAvgPotentiometerVal());
+		SmartDashboard.putNumber("gear dropper potentiometer average", gearDropper.getAvgPotentiometerVal());
 		SmartDashboard.putNumber("gear dropper potentiometer", gearDropper.getPotentiometerVal());
 	}
 	
@@ -113,10 +113,10 @@ public class Robot extends IterativeRobot {
 	
 	@Override
 	public void teleopPeriodic() {
-		if(primaryController.getType() == HIDType.kHIDGamepad){
-			primaryControl();
+		if(primaryController.getPOVCount() == 1){
+			//primaryControl();
 		}
-		if(secondaryController.getType() == HIDType.kHIDGamepad){
+		if(secondaryController.getPOVCount() == 1){
 			secondaryControl();
 		}
 		visionController.update();
