@@ -50,7 +50,6 @@ public class VisionController {
 	 * 200-299	: boiler
 	 */
 	private int autoState;
-	private int previousAutoState;
 	private Timer autoTimer;
 	int turningDirection;
 	double currentAngle;
@@ -64,7 +63,6 @@ public class VisionController {
 		autoState = 0;
 		autoTimer = new Timer();
 		autoTimer.start();
-		this.angleController = angleController;
 		this.imu = imu;
 		this.boilerVision = boilerVision;
 		this.gearVision = gearVision;
@@ -124,7 +122,6 @@ public class VisionController {
 		boilerVision.disable();
 		turnOnLights();
 		autoState = 100;
-		previousAutoState = autoState;
 	}
 	
 	public void startBoilerTracking(){
@@ -132,7 +129,6 @@ public class VisionController {
 		gearVision.disable();
 		turnOnLights();
 		autoState = 200;
-		previousAutoState = autoState;
 	}
 	
 	public void search(){
@@ -278,33 +274,16 @@ public class VisionController {
 			}
 			
 			break;
-		case(103):
-			//adjust to optimal y (distance) value for lift
-			if(yGearController.onTarget()){
-				//done
-				yGearController.disable();
-				drive.mecanumDrive_Cartesian(0, 0, 0, 0);
-				stopAll();
-			}
-			break;
 			
 		case(200):
+			//start going to ideal boiler distance and angle
 			xBoilerController.enable();
+			yBoilerController.enable();
 			autoState = 201;
-			break;
-			
-		case(201):
-			//start boiler sequence, center horizontally
-			if(xBoilerController.onTarget()){
-				xBoilerController.disable();
-				drive.mecanumDrive_Cartesian(0, 0, 0, 0);
-				yBoilerController.enable();
-				autoState = 202;
-			}
 			break;
 		case(202):
 			//go to ideal distance
-			if(yBoilerController.onTarget()){
+			if(linedUpToBoiler()){
 				//done
 				yBoilerController.disable();
 				drive.mecanumDrive_Cartesian(0, 0, 0, 0);
