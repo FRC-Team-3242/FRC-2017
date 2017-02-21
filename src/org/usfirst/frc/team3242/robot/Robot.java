@@ -98,7 +98,6 @@ public class Robot extends IterativeRobot {
 		SmartDashboard.putBoolean("Gear in sight", gearVision.targetFound());
 		SmartDashboard.putBoolean("Boiler in sight", boilerVision.targetFound());
 		SmartDashboard.putNumber("shooter RPM", shooter.getRPM());
-		SmartDashboard.putNumber("shooter dist", shooter.getdist());
 		SmartDashboard.putNumber("heading", visionController.getAbsoluteIMUAngle());
 		SmartDashboard.putNumber("drive dist", driveEncoder.getDistance());
 		SmartDashboard.putNumber("gear dropper potentiometer average", gearDropper.getAvgPotentiometerVal());

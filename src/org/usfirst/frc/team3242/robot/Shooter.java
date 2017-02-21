@@ -85,10 +85,6 @@ public class Shooter {
 		return encoder.getRate() * 60;
 	}
 	
-	public double getdist(){
-		return encoder.getDistance();
-	}
-	
 	/**
 	 * @return the speedTolerance (percent)
 	 */
