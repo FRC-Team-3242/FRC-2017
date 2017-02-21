@@ -8,7 +8,6 @@ import edu.wpi.first.wpilibj.CounterBase;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Encoder;
-import edu.wpi.first.wpilibj.GenericHID.HIDType;
 import edu.wpi.first.wpilibj.GenericHID.Hand;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.PIDController;
@@ -44,7 +43,6 @@ public class Robot extends IterativeRobot {
 	VisionController visionController;
 	Encoder driveEncoder;
 	RobotDrive drive;
-	PigeonImu imu;
 	PigeonImu.GeneralStatus genStatus;
 	PIDController angleController;
 	int turnScalar;
@@ -66,7 +64,7 @@ public class Robot extends IterativeRobot {
 		drive.setInvertedMotor(MotorType.kFrontLeft, true);
 		drive.setInvertedMotor(MotorType.kRearLeft, true);
 		
-		imu = new PigeonImu(9);
+		PigeonImu imu = new PigeonImu(9);
 		
 		angleController = new PIDController(0.8, 0.01,0,new PIDHeadingInput(imu),
 				(num) -> {drive.mecanumDrive_Cartesian(0, 0, num, 0);});
@@ -84,7 +82,7 @@ public class Robot extends IterativeRobot {
 		
 		gearVision = new VisionServer("A");
 		boilerVision = new VisionServer("B");
-		visionController = new VisionController(gearVision, boilerVision, drive, angleController,
+		visionController = new VisionController(gearVision, boilerVision, drive,
 				imu, new Relay(3));
 		
 		shooterToggle = new Toggle();

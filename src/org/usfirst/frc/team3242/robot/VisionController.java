@@ -39,6 +39,10 @@ public class VisionController {
 	private PIDController xGearController;
 	private PIDController yGearController;
 	
+	private double x;
+	private double y;
+	private double r;
+	
 	/**
 	 * integer for state machine
 	 * 0-99		: nothing
@@ -46,6 +50,7 @@ public class VisionController {
 	 * 200-299	: boiler
 	 */
 	private int autoState;
+	private int previousAutoState;
 	private Timer autoTimer;
 	int turningDirection;
 	double currentAngle;
@@ -54,7 +59,7 @@ public class VisionController {
 	VisionServer gearVision;
 	
 	public VisionController(VisionServer gearVision, VisionServer boilerVision,
-			RobotDrive drive, PIDController angleController, PigeonImu imu, Relay lights){
+			RobotDrive drive, PigeonImu imu, Relay lights){
 		this.drive = drive;
 		autoState = 0;
 		autoTimer = new Timer();
@@ -67,26 +72,36 @@ public class VisionController {
 		lights.setDirection(Relay.Direction.kForward);
 		
 		xBoilerController = new PIDController(0.8,0.01,0,new VisionSourceX(boilerVision),
-				(a) -> {drive.mecanumDrive_Cartesian(0, 0, a, 0);});
+				(a) -> {r = a;});
 		xBoilerController.setInputRange(0, xMax);
 		xBoilerController.setPercentTolerance(0.833);
 		xBoilerController.setSetpoint(xBoilerIdeal);
 		yBoilerController = new PIDController(0.8,0.01,0,new VisionSourceY(boilerVision),
-				(a) -> {drive.mecanumDrive_Cartesian(0, a, 0, 0);});
+				(a) -> {y = a;});
 		yBoilerController.setInputRange(0, yMax);
 		yBoilerController.setPercentTolerance(0.833);
 		yBoilerController.setSetpoint(yBoilerIdeal);
 		
 		xGearController = new PIDController(0.8,0.01,0,new VisionSourceX(gearVision),
-				(a) -> {drive.mecanumDrive_Cartesian(a, 0, 0, 0);});
+				(a) -> {x = a;});
 		xGearController.setInputRange(0, xMax);
 		xGearController.setPercentTolerance(0.833);
 		xGearController.setSetpoint(xLiftIdeal);
 		yGearController = new PIDController(0.8,0.01,0,new VisionSourceY(gearVision),
-				(a) -> {drive.mecanumDrive_Cartesian(0, a, 0, 0);});
+				(a) -> {y = a;});
 		yGearController.setInputRange(0, yMax);
 		yGearController.setPercentTolerance(0.833);
 		yGearController.setSetpoint(yLiftIdeal);
+		
+		angleController = new PIDController(0.8, 0.01,0,new PIDHeadingInput(imu),
+				(a) -> {r=a;});
+		angleController.setInputRange(0, 360);
+		angleController.setPercentTolerance(1);
+		angleController.setContinuous();
+		
+		x = 0;
+		y = 0;
+		r = 0;
 	}
 	
 	public double getAbsoluteIMUAngle(){
@@ -109,6 +124,7 @@ public class VisionController {
 		boilerVision.disable();
 		turnOnLights();
 		autoState = 100;
+		previousAutoState = autoState;
 	}
 	
 	public void startBoilerTracking(){
@@ -116,6 +132,7 @@ public class VisionController {
 		gearVision.disable();
 		turnOnLights();
 		autoState = 200;
+		previousAutoState = autoState;
 	}
 	
 	public void search(){
@@ -140,6 +157,10 @@ public class VisionController {
 		return autoState;
 	}
 	
+	public boolean linedUpToLift(){
+		return linedUpToLiftX() && linedUpToLiftY();
+	}
+	
 	public boolean linedUpToLiftX(){
 		return xGearController.onTarget();
 	}
@@ -160,6 +181,14 @@ public class VisionController {
 		return angleController.onTarget();
 	}
 	
+	private void checkIfLostGear(){
+		if(!gearVision.targetFound()){
+			r = Math.signum(r) * 0.1;
+			stopAll();
+			autoState = -200;
+		}
+	}
+	
 	/**
 	 * should be called ONCE per iteration at end of iteration
 	 * for instance, at the end of the teleopPeriodic function
@@ -169,12 +198,54 @@ public class VisionController {
 	public void update(){
 		gearVision.update();
 		boilerVision.update();
+		//this allows multiple PID loops to run simultaneously
+		if(autoState != 0){
+			drive.mecanumDrive_Cartesian(x, y, r, 0);
+		}
+		//check if boiler target was lost
+		if(autoState >= 100 && autoState < 200){
+			if(!boilerVision.targetFound()){
+				stopAll();
+				//check last known position of target
+				if(gearVision.getX() > xMax / 2){
+					r = 0.1;
+				}else{
+					r = -0.1;
+				}
+				autoState = -100;
+			}
+		}
+		//check if gear target was lost
+		if(autoState >= 200 && autoState < 300){
+			if(!gearVision.targetFound()){
+				stopAll();
+				//check last known position of target
+				if(gearVision.getX() > xMax / 2){
+					x = 0.2;
+				}else{
+					x = -0.2;
+				}
+				autoState = -200;
+			}
+		}
 		switch(autoState){
+		case(-200):
+			//spin to search for gear target
+			if(gearVision.targetFound()){
+				r = 0;
+				startLiftTracking();
+			}
+			break;
+		case(-100):
+			//spin to search for boiler target
+			if(boilerVision.targetFound()){
+				r = 0;
+				startBoilerTracking();
+			}
+			break;
 		case(0):
 			//do nothing
 			break;
-		
-		
 		case(100):
 			//select nearest ideal angle
 			currentAngle = getAbsoluteIMUAngle();
@@ -193,19 +264,17 @@ public class VisionController {
 		case(101):
 			//adjust to nearest angle
 			if (angleController.onTarget()){
-				angleController.disable();
 				drive.mecanumDrive_Cartesian(0, 0, 0, 0);
 				xGearController.enable();
-				autoState = 102;
+				yGearController.enable();
+				autoState = 103;
 			}
 			break;
 		case(102):
-			//adjust to optimal x (horizontal positioning) value for lift
-			if(xGearController.onTarget()){
-				xGearController.disable();
+			//wait to adjust to optimal x and y value for lift, while maintaining angle
+			if(linedUpToLift()){
 				drive.mecanumDrive_Cartesian(0, 0, 0, 0);
-				yGearController.enable();
-				autoState = 103;
+				stopAll();
 			}
 			
 			break;
@@ -243,30 +312,6 @@ public class VisionController {
 			}
 			break;
 		}
-	}
-	
-	/**
-	 * 	Simple PID controller, with only a P term 
-	 * @param sensor current detected tape in pixels
-	 * @param target ideal position for tape in pixels
-	 * @param maxSpeed how quickly to correct for error. high values could be unstable. between 0 and 1.
-	 * @param maxSensor maximum sensor value (xMax or yMax), used to normalize
-	 * @return normalized output to give to motor controller
-	 * @deprecated use built in PID controller
-	 */
-	private double pLoop(double sensor, double target, double maxSpeed, double maxSensor){
-		double error = target - sensor;
-		double normalizedError = error / maxSensor;
-		return normalizedError * maxSpeed;
-	}
-
-	/**
-	 * @param value this is the input
-	 * @return val-tol < tar < val+tol
-	 * @deprecated use built in PID controller
-	 */
-	private boolean numberInTolerance(double value, double target, double tolerance){
-		return (value - tolerance < target) && (target < value + tolerance);
 	}
 	
 	class VisionSourceX implements PIDSource{

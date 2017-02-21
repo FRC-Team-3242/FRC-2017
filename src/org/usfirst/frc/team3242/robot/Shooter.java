@@ -9,6 +9,7 @@ import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.PIDController;
 import edu.wpi.first.wpilibj.PIDSourceType;
 import edu.wpi.first.wpilibj.Spark;
+import edu.wpi.first.wpilibj.Timer;
 
 
 /**
@@ -21,6 +22,8 @@ public class Shooter {
 	private boolean isEnabled;
 	private CANTalon shooter;
 	private Spark elevator;
+	private Timer elevatorTimer;
+	private final double elevatorDelay = 1.5;
 	private Encoder encoder;
 	private double rps; // is RPS instead of RPM, because encoder returns in distance per second. Setters and getter are 
 						// converted to and from RPM for easier human input and reading
@@ -47,6 +50,8 @@ public class Shooter {
 		pid.setOutputRange(-100, 100);
 		speedTolerance = 5;
 		pid.setPercentTolerance(speedTolerance);
+		elevatorTimer = new Timer();
+		elevatorTimer.start();
 		shooter.setSafetyEnabled(false);
 	}
 
@@ -106,7 +111,7 @@ public class Shooter {
 	 * turns on elevator if the motor is up to speed (in a range of speed tolerance)
 	 */
 	public void elevate(){
-		if (isEnabled && pid.onTarget()){ //calibrate range
+		if (isEnabled && (pid.onTarget() || elevatorTimer.get() > elevatorDelay)){ //calibrate range
 			elevator.set(0.75); //need to test
 		}
 		else{
@@ -117,6 +122,7 @@ public class Shooter {
 	 * Enables PID/shooter
 	 */
 	public void enable(){
+		elevatorTimer.reset();
 		pid.enable();
 		isEnabled = true;
 	}
