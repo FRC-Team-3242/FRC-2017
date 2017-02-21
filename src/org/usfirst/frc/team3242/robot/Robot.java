@@ -100,14 +100,88 @@ public class Robot extends IterativeRobot {
 		SmartDashboard.putNumber("drive dist", driveEncoder.getDistance());
 	}
 	
+
+	@Override
+	public void teleopInit(){
+		visionController.stopAll();
+		shooter.disable();
+	}
+	/**
+	 * LBumper:			boiler vision tracking
+	 * RBumper:			lift vision tracking
+	 * X:				stop vision tracking
+	 * start button:	search for targets
+	 * A:				toggle shooter
+	 * B:				run ball pick up
+	 * Y:				drop gear
+	 */
+	@Override
+	public void teleopPeriodic() {
+		if(visionController.getAutoState() == 0){
+			if(controller.getBumper(Hand.kLeft)){
+				visionController.startBoilerTracking();
+			}
+			if(controller.getBumper(Hand.kRight)){
+				visionController.startLiftTracking();
+			}
+			if(controller.getStartButton()){
+				visionController.search();
+			}
+			
+			double x = controller.getRawAxis(0);
+			double y = controller.getRawAxis(1);
+			double r = controller.getRawAxis(4);
+			if(Math.abs(x) < 0.1){
+				x = 0;
+			}
+			if(Math.abs(y) < 0.1){
+				y = 0;
+			}
+			if(Math.abs(r) < 0.1){
+				r = 0;
+			}
+			drive.mecanumDrive_Cartesian(x, y, r, 0);
+			//drive.mecanumDrive_Cartesian(controller.getX(Hand.kLeft),controller.getY(Hand.kLeft), controller.getX(Hand.kRight), 0);
+		}
+		
+		shooter.manualShooter(controller.getRawAxis(3));
+		shooter.manualElevator(-controller.getRawAxis(2));
+		
+		if(controller.getXButton()){
+			visionController.stopAll();
+		}
+		
+		if(controller.getAButton()){
+			shooterToggle.toggle();
+		}
+		
+		if (shooterToggle.getStatus() && !shooter.isEnabled()){
+			shooter.enable();
+		}
+		else if (shooterToggle.getStatus() && shooter.isEnabled()){
+			shooter.disable();
+		}
+		shooter.elevate();
+		
+		climber.climb(controller.getPOV() == 0, controller.getPOV() == 180);//up, down
+		
+		gearDropper.open(controller.getYButton());
+		
+		ballPickup.set(controller.getBButton());
+		
+		visionController.update();
+		
+		sendInfoToDashboard();
+	}
+	
 	@Override
 	public void autonomousInit() {
 		autoSelected = chooser.getSelected();
 		// autoSelected = SmartDashboard.getString("Auto Selector",
 		// defaultAuto);
 		System.out.println("Auto selected: " + autoSelected);
-		//with current setup, the turnScalar will mess up the inequalities
-		if(DriverStation.getInstance().getAlliance() == Alliance.Blue){
+		if(autoSelected.equals(shootingAuto) && 
+				DriverStation.getInstance().getAlliance() == Alliance.Blue){
 			turnScalar = -1;
 		}else{
 			turnScalar = 1;
@@ -119,14 +193,15 @@ public class Robot extends IterativeRobot {
 	public void autonomousPeriodic() {
 		double currentAngle = visionController.getAbsoluteIMUAngle();
 		
-		//flips heading to counter-clockwise when starting from other side of field
-		if (DriverStation.getInstance().getAlliance() == Alliance.Blue){
-			currentAngle = (360 - currentAngle) % 360;
-		}
 		
 		switch (autoSelected) {
 		
 		case shootingAuto:
+
+			//flips heading to counter-clockwise when starting from other side of field
+			if (DriverStation.getInstance().getAlliance() == Alliance.Blue){
+				currentAngle = (360 - currentAngle) % 360;
+			}
 			
 			switch (autoState){
 			
@@ -312,80 +387,6 @@ public class Robot extends IterativeRobot {
 				}
 		}
 	}
-
-	@Override
-	public void teleopInit(){
-		visionController.stopAll();
-		shooter.disable();
-	}
-	/**
-	 * LBumper:			boiler vision tracking
-	 * RBumper:			lift vision tracking
-	 * X:				stop vision tracking
-	 * start button:	search for targets
-	 * A:				toggle shooter
-	 * B:				run ball pick up
-	 * Y:				drop gear
-	 */
-	@Override
-	public void teleopPeriodic() {
-		if(visionController.getAutoState() == 0){
-			if(controller.getBumper(Hand.kLeft)){
-				visionController.startBoilerTracking();
-			}
-			if(controller.getBumper(Hand.kRight)){
-				visionController.startLiftTracking();
-			}
-			if(controller.getStartButton()){
-				visionController.search();
-			}
-			
-			double x = controller.getRawAxis(0);
-			double y = controller.getRawAxis(1);
-			double r = controller.getRawAxis(4);
-			if(Math.abs(x) < 0.1){
-				x = 0;
-			}
-			if(Math.abs(y) < 0.1){
-				y = 0;
-			}
-			if(Math.abs(r) < 0.1){
-				r = 0;
-			}
-			drive.mecanumDrive_Cartesian(x, y, r, 0);
-			//drive.mecanumDrive_Cartesian(controller.getX(Hand.kLeft),controller.getY(Hand.kLeft), controller.getX(Hand.kRight), 0);
-		}
-		
-		shooter.manualShooter(controller.getRawAxis(3));
-		shooter.manualElevator(-controller.getRawAxis(2));
-		
-		if(controller.getXButton()){
-			visionController.stopAll();
-		}
-		
-		if(controller.getAButton()){
-			shooterToggle.toggle();
-		}
-		
-		if (shooterToggle.getStatus() && !shooter.isEnabled()){
-			shooter.enable();
-		}
-		else if (shooterToggle.getStatus() && shooter.isEnabled()){
-			shooter.disable();
-		}
-		shooter.elevate();
-		
-		climber.climb(controller.getPOV() == 0, controller.getPOV() == 180);//up, down
-		
-		gearDropper.open(controller.getYButton());
-		
-		ballPickup.set(controller.getBButton());
-		
-		visionController.update();
-		
-		sendInfoToDashboard();
-	}
-
 	
 	@Override
 	public void testPeriodic() {
