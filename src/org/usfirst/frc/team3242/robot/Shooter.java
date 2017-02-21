@@ -8,6 +8,7 @@ import com.ctre.CANTalon;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.PIDController;
 import edu.wpi.first.wpilibj.PIDSourceType;
+import edu.wpi.first.wpilibj.Spark;
 
 
 /**
@@ -19,7 +20,7 @@ import edu.wpi.first.wpilibj.PIDSourceType;
 public class Shooter {
 	private boolean isEnabled;
 	private CANTalon shooter;
-	private CANTalon elevator;
+	private Spark elevator;
 	private Encoder encoder;
 	private double rps; // is RPS instead of RPM, because encoder returns in distance per second. Setters and getter are 
 						// converted to and from RPM for easier human input and reading
@@ -30,7 +31,7 @@ public class Shooter {
 	/**
 	 * @param Motor controller for motor for shooter
 	 */
-	public Shooter(CANTalon shooter, Encoder encoder, CANTalon elevator) {
+	public Shooter(CANTalon shooter, Encoder encoder, Spark elevator) {
 		this.encoder = encoder;
 		this.shooter = shooter;
 		this.elevator = elevator;
@@ -51,6 +52,9 @@ public class Shooter {
 		shooter.set(s);
 	}
 	
+	public void manualElevator(double s){
+		elevator.set(s);
+	}
 	
 	/**
 	 * 
@@ -74,6 +78,10 @@ public class Shooter {
 	 */
 	public double getRPM(){
 		return encoder.getRate() * 60;
+	}
+	
+	public double getdist(){
+		return encoder.getDistance();
 	}
 	
 	/**

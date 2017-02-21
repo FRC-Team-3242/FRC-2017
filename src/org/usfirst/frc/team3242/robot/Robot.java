@@ -13,6 +13,7 @@ import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.PIDController;
 import edu.wpi.first.wpilibj.Relay;
 import edu.wpi.first.wpilibj.RobotDrive;
+import edu.wpi.first.wpilibj.RobotDrive.MotorType;
 import edu.wpi.first.wpilibj.Spark;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
@@ -48,9 +49,6 @@ public class Robot extends IterativeRobot {
 	int autoState;
 
 	
-	double[] ypr;
-
-	
 	@Override
 	public void robotInit() {
 		chooser.addDefault("Front Gear", frontGearAuto);
@@ -59,26 +57,28 @@ public class Robot extends IterativeRobot {
 		chooser.addObject("Shooting", shootingAuto);
 		SmartDashboard.putData("Auto choices", chooser);
 		
-		driveEncoder = new Encoder(0, 1, false, CounterBase.EncodingType.k4X); 
+		driveEncoder = new Encoder(6, 7, false, CounterBase.EncodingType.k2X); 
 		driveEncoder.setDistancePerPulse(0.014);
 		
-		drive = new RobotDrive(new CANTalon(0), new CANTalon(1), new CANTalon(2), new CANTalon(3));
+		drive = new RobotDrive(new CANTalon(8), new CANTalon(5), new CANTalon(7), new CANTalon(6));
+		drive.setInvertedMotor(MotorType.kFrontLeft, true);
+		drive.setInvertedMotor(MotorType.kRearLeft, true);
 		
-		imu = new PigeonImu(20);
-		ypr =  new double[3];
+		imu = new PigeonImu(9);
 		
 		angleController = new PIDController(0.8, 0.01,0,new PIDHeadingInput(imu),
 				(num) -> {drive.mecanumDrive_Cartesian(0, 0, num, 0);});
 		angleController.setInputRange(0, 360);
 		angleController.setPercentTolerance(1);
 		angleController.setContinuous();
-		
+		//5678 ccw start bl
 		controller = new XboxController(1);
-		shooter = new Shooter(new CANTalon(4), new Encoder(0, 1, false, CounterBase.EncodingType.k4X), new CANTalon(5));
+		shooter = new Shooter(new CANTalon(3),
+				new Encoder(9, 8, false, CounterBase.EncodingType.k2X), new Spark(0));
 		shooter.setSpeedTolerance(20);
-		ballPickup = new BallPickup(new CANTalon(6), new CANTalon(7));
+		ballPickup = new BallPickup(new CANTalon(1), new CANTalon(2));
 		gearDropper = new GearDropper(new Spark(1), new AnalogInput(1));
-		climber = new Climber(new CANTalon(8));
+		climber = new Climber(new CANTalon(4));
 		
 		gearVision = new VisionServer("A");
 		boilerVision = new VisionServer("B");
@@ -91,9 +91,13 @@ public class Robot extends IterativeRobot {
 	}
 	
 	public void sendInfoToDashboard(){
+		SmartDashboard.putString("test", "yes");
 		SmartDashboard.putBoolean("Gear in sight", gearVision.targetFound());
 		SmartDashboard.putBoolean("Boiler in sight", boilerVision.targetFound());
 		SmartDashboard.putNumber("shooter RPM", shooter.getRPM());
+		SmartDashboard.putNumber("heading", visionController.getAbsoluteIMUAngle());
+		SmartDashboard.putNumber("encoder dist", shooter.getdist());
+		SmartDashboard.putNumber("drive dist", driveEncoder.getDistance());
 	}
 	
 	@Override
@@ -335,12 +339,25 @@ public class Robot extends IterativeRobot {
 			if(controller.getStartButton()){
 				visionController.search();
 			}
-			drive.mecanumDrive_Cartesian(controller.getX(Hand.kLeft),
-					controller.getY(Hand.kLeft), controller.getX(Hand.kRight), 0);
+			
+			double x = controller.getRawAxis(0);
+			double y = controller.getRawAxis(1);
+			double r = controller.getRawAxis(4);
+			if(Math.abs(x) < 0.1){
+				x = 0;
+			}
+			if(Math.abs(y) < 0.1){
+				y = 0;
+			}
+			if(Math.abs(r) < 0.1){
+				r = 0;
+			}
+			drive.mecanumDrive_Cartesian(x, y, r, 0);
+			//drive.mecanumDrive_Cartesian(controller.getX(Hand.kLeft),controller.getY(Hand.kLeft), controller.getX(Hand.kRight), 0);
 		}
 		
-		shooter.manualShooter(controller.getTriggerAxis(Hand.kRight) - 
-				controller.getTriggerAxis(Hand.kLeft));
+		shooter.manualShooter(controller.getRawAxis(3));
+		shooter.manualElevator(-controller.getRawAxis(2));
 		
 		if(controller.getXButton()){
 			visionController.stopAll();
