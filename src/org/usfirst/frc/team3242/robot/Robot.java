@@ -11,6 +11,7 @@ import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.GenericHID.Hand;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.PIDController;
+import edu.wpi.first.wpilibj.PIDSourceType;
 import edu.wpi.first.wpilibj.Relay;
 import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.RobotDrive.MotorType;
@@ -57,7 +58,7 @@ public class Robot extends IterativeRobot {
 		chooser.addObject("Shooting", shootingAuto);
 		SmartDashboard.putData("Auto choices", chooser);
 		
-		driveEncoder = new Encoder(6, 7, false, CounterBase.EncodingType.k2X); 
+		driveEncoder = new Encoder(8, 9, false, CounterBase.EncodingType.k2X); 
 		driveEncoder.setDistancePerPulse(0.014);
 		
 		drive = new RobotDrive(new CANTalon(8), new CANTalon(5), new CANTalon(7), new CANTalon(6));
@@ -73,8 +74,10 @@ public class Robot extends IterativeRobot {
 		angleController.setContinuous();
 		primaryController = new XboxController(1);
 		secondaryController = new XboxController(2);
-		shooter = new Shooter(new CANTalon(3),
-				new Encoder(9, 8, false, CounterBase.EncodingType.k2X), new Spark(0));
+		Encoder shooterEncoder = new Encoder(6, 7, false, CounterBase.EncodingType.k2X);
+		shooterEncoder.setDistancePerPulse(0.025);//1/40 (40 pulses per rotation)
+		shooterEncoder.setPIDSourceType(PIDSourceType.kRate);
+		shooter = new Shooter(new CANTalon(3), shooterEncoder, new Spark(0));
 		shooter.setSpeedTolerance(20);
 		ballPickup = new BallPickup(new CANTalon(1), new CANTalon(2));
 		gearDropper = new GearDropper(new Spark(1), new AnalogInput(1));
@@ -111,12 +114,8 @@ public class Robot extends IterativeRobot {
 	
 	@Override
 	public void teleopPeriodic() {
-		if(primaryController.getPOVCount() == 1){
-			//primaryControl();
-		}
-		if(secondaryController.getPOVCount() == 1){
-			secondaryControl();
-		}
+		primaryControl();
+		//secondaryControl();
 		visionController.update();
 		sendInfoToDashboard();
 	}
@@ -192,7 +191,7 @@ public class Robot extends IterativeRobot {
 		shooter.overrideElevator(-secondaryController.getRawAxis(2));	//LT
 		gearDropper.override(-secondaryController.getRawAxis(1));		//LY
 		climber.climb(secondaryController.getYButton(), secondaryController.getAButton());
-		ballPickup.set(secondaryController.getRawAxis(5));				//RY
+		ballPickup.set(secondaryController.getRawAxis(5));				//RY (two motors)
 	}
 	
 	@Override

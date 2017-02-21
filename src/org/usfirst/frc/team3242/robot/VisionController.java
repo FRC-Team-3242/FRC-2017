@@ -177,14 +177,6 @@ public class VisionController {
 		return angleController.onTarget();
 	}
 	
-	private void checkIfLostGear(){
-		if(!gearVision.targetFound()){
-			r = Math.signum(r) * 0.1;
-			stopAll();
-			autoState = -200;
-		}
-	}
-	
 	/**
 	 * should be called ONCE per iteration at end of iteration
 	 * for instance, at the end of the teleopPeriodic function

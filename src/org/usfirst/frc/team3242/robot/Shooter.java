@@ -41,8 +41,6 @@ public class Shooter {
 		this.encoder = encoder;
 		this.shooter = shooter;
 		this.elevator = elevator;
-		//40 pulses per rotation for a cimcoder
-		this.encoder.setDistancePerPulse(1/40); // so one rotation = one unit for rate
 		this.encoder.setPIDSourceType(PIDSourceType.kRate);
 		isEnabled = false;
 		pid = new PIDController(0.7, 0.01, 0, 1 / maxRPS, encoder, shooter); //need to configure PID values
