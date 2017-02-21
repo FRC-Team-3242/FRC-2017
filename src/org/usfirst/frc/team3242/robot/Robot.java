@@ -93,6 +93,7 @@ public class Robot extends IterativeRobot {
 	public void sendInfoToDashboard(){
 		SmartDashboard.putBoolean("Gear in sight", gearVision.targetFound());
 		SmartDashboard.putBoolean("Boiler in sight", boilerVision.targetFound());
+		SmartDashboard.putNumber("shooter RPM", shooter.getRPM());
 	}
 	
 	@Override
@@ -337,6 +338,9 @@ public class Robot extends IterativeRobot {
 			drive.mecanumDrive_Cartesian(controller.getX(Hand.kLeft),
 					controller.getY(Hand.kLeft), controller.getX(Hand.kRight), 0);
 		}
+		
+		shooter.manualShooter(controller.getTriggerAxis(Hand.kRight) - 
+				controller.getTriggerAxis(Hand.kLeft));
 		
 		if(controller.getXButton()){
 			visionController.stopAll();

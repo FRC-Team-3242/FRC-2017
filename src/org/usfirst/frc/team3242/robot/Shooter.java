@@ -47,7 +47,9 @@ public class Shooter {
 		shooter.setSafetyEnabled(false);
 	}
 
-	
+	public void manualShooter(double s){
+		shooter.set(s);
+	}
 	
 	
 	/**
