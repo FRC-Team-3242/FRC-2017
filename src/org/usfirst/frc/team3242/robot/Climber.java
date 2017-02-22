@@ -10,11 +10,14 @@ public class Climber {
 	}
 	public void climb(boolean climb, boolean reverse){
 		if(climb){
-			climberMotor.set(speed);
+			climb(speed);
 		}else if(reverse){
-			climberMotor.set(-speed);
+			climb(-speed);
 		}else{
-			climberMotor.set(0);
+			climb(0);
 		}
+	}
+	public void climb(double s){
+		climberMotor.set(s);
 	}
 }

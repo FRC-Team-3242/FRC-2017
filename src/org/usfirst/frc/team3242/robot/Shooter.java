@@ -8,6 +8,8 @@ import com.ctre.CANTalon;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.PIDController;
 import edu.wpi.first.wpilibj.PIDSourceType;
+import edu.wpi.first.wpilibj.Spark;
+import edu.wpi.first.wpilibj.Timer;
 
 
 /**
@@ -19,7 +21,9 @@ import edu.wpi.first.wpilibj.PIDSourceType;
 public class Shooter {
 	private boolean isEnabled;
 	private CANTalon shooter;
-	private CANTalon elevator;
+	private Spark elevator;
+	private Timer elevatorTimer;
+	private final double elevatorDelay = 1.5;
 	private Encoder encoder;
 	private double rps; // is RPS instead of RPM, because encoder returns in distance per second. Setters and getter are 
 						// converted to and from RPM for easier human input and reading
@@ -28,27 +32,34 @@ public class Shooter {
 	private double speedTolerance; // in percentages
 
 	/**
-	 * @param Motor controller for motor for shooter
+	 * 
+	 * @param shooter Motor controller for motor for shooter
+	 * @param encoder Encoder for shooter speed
+	 * @param elevator shooter's elevator in the hopper
 	 */
-	public Shooter(CANTalon shooter, Encoder encoder, CANTalon elevator) {
+	public Shooter(CANTalon shooter, Encoder encoder, Spark elevator) {
 		this.encoder = encoder;
 		this.shooter = shooter;
 		this.elevator = elevator;
-		//40 pulses per rotation for a cimcoder
-		this.encoder.setDistancePerPulse(1/40); // so one rotation = one unit for rate
 		this.encoder.setPIDSourceType(PIDSourceType.kRate);
 		isEnabled = false;
-		//add f parameter as 1/maxRPS
-		pid = new PIDController(0.7, 0.01, 0, encoder, shooter); //need to configure PID values
+		pid = new PIDController(0.7, 0.01, 0, 1 / maxRPS, encoder, shooter); //need to configure PID values
 		pid.setInputRange(-maxRPS, maxRPS); //need to test
 		pid.setOutputRange(-100, 100);
 		speedTolerance = 5;
 		pid.setPercentTolerance(speedTolerance);
+		elevatorTimer = new Timer();
+		elevatorTimer.start();
 		shooter.setSafetyEnabled(false);
 	}
 
+	public void overrideShooter(double s){
+		shooter.set(s);
+	}
 	
-	
+	public void overrideElevator(double s){
+		elevator.set(s);
+	}
 	
 	/**
 	 * 
@@ -94,7 +105,7 @@ public class Shooter {
 	 * turns on elevator if the motor is up to speed (in a range of speed tolerance)
 	 */
 	public void elevate(){
-		if (isEnabled && pid.onTarget()){ //calibrate range
+		if (isEnabled && (pid.onTarget() || elevatorTimer.get() > elevatorDelay)){ //calibrate range
 			elevator.set(0.75); //need to test
 		}
 		else{
@@ -105,6 +116,7 @@ public class Shooter {
 	 * Enables PID/shooter
 	 */
 	public void enable(){
+		elevatorTimer.reset();
 		pid.enable();
 		isEnabled = true;
 	}
