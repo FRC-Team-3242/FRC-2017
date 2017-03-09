@@ -27,7 +27,8 @@ public class Shooter {
 	private Encoder encoder;
 	private double rps; // is RPS instead of RPM, because encoder returns in distance per second. Setters and getter are 
 						// converted to and from RPM for easier human input and reading
-	private final double maxRPS = 40;
+	private final double maxRPM = 2059;
+	private final double maxRPS = maxRPM*60;
 	private PIDController pid;
 	private double speedTolerance; // in percentages
 

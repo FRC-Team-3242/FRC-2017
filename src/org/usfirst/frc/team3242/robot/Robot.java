@@ -41,7 +41,7 @@ public class Robot extends IterativeRobot {
 	BallPickup ballPickup;
 	GearDropper gearDropper;
 	Climber climber;
-	Toggle shooterToggle;
+	Toggle shooterToggle, ballPickupToggle;
 	XboxController primaryController;
 	XboxController secondaryController;
 	VisionServer gearVision, boilerVision;
@@ -88,7 +88,7 @@ public class Robot extends IterativeRobot {
 		shooterEncoder.setPIDSourceType(PIDSourceType.kRate);
 		shooter = new Shooter(new CANTalon(3), shooterEncoder, new Spark(2));
 		shooter.setSpeedTolerance(20);
-		shooter.setRPM(2600); //make adjustable by smartdashboard?
+		shooter.setRPM(2040); //make adjustable by smartdashboard?
 		ballPickup = new BallPickup(new CANTalon(1), new CANTalon(2));
 		gearDropper = new GearDropper(new Spark(3), new AnalogInput(0));
 		climber = new Climber(new CANTalon(4));
@@ -99,6 +99,7 @@ public class Robot extends IterativeRobot {
 				imu, new Relay(3));
 		
 		shooterToggle = new Toggle();
+		ballPickupToggle = new Toggle();
 
 	}
 	
@@ -178,37 +179,26 @@ public class Robot extends IterativeRobot {
 			visionController.stopAll();
 		}
 		
-		if(primaryController.getAButton()){
-			shooterToggle.toggle();
-		}
-		
+		shooterToggle.toggle(primaryController.getAButton());
 		if (primaryController.getAButton() && !shooter.isEnabled()){
 			shooter.enable();
-		}
-		else if (!primaryController.getAButton() && shooter.isEnabled()){
+		}else if(!primaryController.getAButton() && shooter.isEnabled()){
 			shooter.disable();
 		}
+		
 		shooter.elevate();
 		
 		climber.climb(primaryController.getPOV() == 0, primaryController.getPOV() == 180);//up, down
 		
-		gearDropper.open(primaryController.getYButton());
+		//gearDropper.open(primaryController.getYButton());
 		
-		ballPickup.set(primaryController.getBButton(), primaryController.getBackButton());
 		
+		ballPickupToggle.toggle(primaryController.getBButton());
+		ballPickup.set(ballPickupToggle.getStatus(), primaryController.getBackButton());
 	}
 	
 	public void secondaryControl(){
-		
-		//CAMERA LIGHTS
-		if(secondaryController.getRawButton(2))					//b
-			visionController.turnOnLights(Value.kForward);
-		else if(secondaryController.getRawButton(3))			//x
-			visionController.turnOnLights(Value.kReverse);
-		else
-			visionController.turnOnLights(Value.kOff);
-		
-		//GEAR DROPPER
+		//GEAR DROPPER AUTO
 		if(secondaryController.getRawButton(5)){					//L1
 			gearDropper.open(secondaryController.getRawButton(6));	//R1
 		}
@@ -217,23 +207,32 @@ public class Robot extends IterativeRobot {
 		double LT = secondaryController.getRawAxis(2);
 		double LY = secondaryController.getRawAxis(1);
 		double RY = secondaryController.getRawAxis(5);
+		
+		//SHOOTER []
 		if(Math.abs(RT) > 0.1)
 			shooter.overrideShooter(RT);		//RT
 		else
 			shooter.overrideShooter(0);
+		
+		//ELEVATOR SHOOTER
 		if(Math.abs(LT) > 0.1)
 			shooter.overrideElevator(-LT);	//LT
 		else
 			shooter.overrideElevator(0);
+		
+		//GEAR DROPPER MANUAL
 		if(Math.abs(LY) > 0.1)
 			gearDropper.set(-LY);									
 		else
 			gearDropper.set(0);
+		
+		//BALL PICKUP
 		if(Math.abs(RY) > 0.1)
 			ballPickup.set(RY);				//RY (two motors)
 		else
 			ballPickup.set(0);
 		
+		//CLIMBER
 		climber.climb(secondaryController.getYButton(), secondaryController.getAButton());
 	}
 	
@@ -269,6 +268,7 @@ public class Robot extends IterativeRobot {
 			else{
 				drive.mecanumDrive_Cartesian(0, 0, 0, 0);
 			}
+			break;
 		case shootingAuto:
 
 			//flips heading to counter-clockwise when starting from other side of field

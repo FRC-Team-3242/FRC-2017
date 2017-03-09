@@ -3,7 +3,7 @@ package org.usfirst.frc.team3242.robot;
 import com.ctre.CANTalon;
 
 public class Climber {
-	private final double speed = 0.8;
+	private final double speed = 1;
 	private CANTalon climberMotor;
 	public Climber(CANTalon climb){
 		this.climberMotor = climb;

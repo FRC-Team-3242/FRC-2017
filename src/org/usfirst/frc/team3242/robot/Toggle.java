@@ -8,7 +8,7 @@ import edu.wpi.first.wpilibj.Timer;
  *
  */
 public class Toggle {
-	private final double minWait = 0.75;
+	private final double minWait = 0.2;
 	private Timer timer;
 	private boolean on;
 	
@@ -20,6 +20,10 @@ public class Toggle {
 		timer = new Timer();
 		timer.start();
 		on = defaultValue;
+	}
+	
+	public void toggle(boolean toggle){
+		if(toggle) toggle();
 	}
 	
 	public void toggle(){

@@ -7,7 +7,7 @@ public class GearDropper {
 	private Spark dropperActuator;
 	private AnalogInput potentiometer;
 	private final double maxVal = 1.9;//2.1618
-	private final double minVal = 1.7;//1.545
+	private final double minVal = 1.5;//1.545
 	private final double speed = 0.3;
 	
 	public GearDropper(Spark actuator, AnalogInput pot){

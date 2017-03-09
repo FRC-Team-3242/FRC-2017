@@ -6,6 +6,7 @@ import edu.wpi.first.wpilibj.PIDController;
 import edu.wpi.first.wpilibj.PIDSource;
 import edu.wpi.first.wpilibj.PIDSourceType;
 import edu.wpi.first.wpilibj.Relay;
+import edu.wpi.first.wpilibj.Relay.Direction;
 import edu.wpi.first.wpilibj.Relay.Value;
 import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.Timer;
@@ -14,7 +15,6 @@ public class VisionController {
 	
 	private RobotDrive drive;
 	private PIDController angleController;
-	private Relay lights;
 	
 	//camera resolution
 	private final double xMax = 640;
@@ -66,7 +66,7 @@ public class VisionController {
 		this.imu = imu;
 		this.boilerVision = boilerVision;
 		this.gearVision = gearVision;
-		this.lights = lights;
+		lights.setDirection(Direction.kBoth);
 		//lights.setDirection(Relay.Direction.kForward);
 		
 		xBoilerController = new PIDController(0.8,0.01,0,new VisionSourceX(boilerVision),
@@ -113,39 +113,27 @@ public class VisionController {
 		return yaw;
 	}
 	
-	public void turnOnLights(Value direction){
-		lights.set(direction);
-	}
-	
-	public void turnOnLights(){
-		lights.set(Value.kForward);
-	}
-	
 	
 	public void startLiftTracking(){
 		gearVision.enable();
 		boilerVision.disable();
-		turnOnLights();
 		autoState = 100;
 	}
 	
 	public void startBoilerTracking(){
 		boilerVision.enable();
 		gearVision.disable();
-		turnOnLights();
 		autoState = 200;
 	}
 	
 	public void search(){
 		gearVision.enable();
 		boilerVision.enable();
-		turnOnLights();
 	}
 	
 	public void stopAll(){
 		gearVision.disable();
 		boilerVision.disable();
-		lights.set(Value.kOff);
 		autoState = 0;
 		xBoilerController.disable();
 		yBoilerController.disable();
