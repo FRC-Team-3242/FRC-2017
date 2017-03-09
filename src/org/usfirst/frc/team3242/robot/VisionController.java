@@ -67,7 +67,7 @@ public class VisionController {
 		this.boilerVision = boilerVision;
 		this.gearVision = gearVision;
 		this.lights = lights;
-		lights.setDirection(Relay.Direction.kForward);
+		//lights.setDirection(Relay.Direction.kForward);
 		
 		xBoilerController = new PIDController(0.8,0.01,0,new VisionSourceX(boilerVision),
 				(a) -> {r = a;});
@@ -113,9 +113,14 @@ public class VisionController {
 		return yaw;
 	}
 	
-	private void turnOnLights(){
-		lights.set(Value.kOn);
+	public void turnOnLights(Value direction){
+		lights.set(direction);
 	}
+	
+	public void turnOnLights(){
+		lights.set(Value.kForward);
+	}
+	
 	
 	public void startLiftTracking(){
 		gearVision.enable();

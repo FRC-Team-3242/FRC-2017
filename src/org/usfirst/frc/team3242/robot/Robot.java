@@ -9,6 +9,7 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.GenericHID.Hand;
+import edu.wpi.first.wpilibj.Relay.Value;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.PIDController;
 import edu.wpi.first.wpilibj.PIDSourceType;
@@ -30,8 +31,11 @@ public class Robot extends IterativeRobot {
 	final String leftGearAuto = "Left Gear";
 	final String rightGearAuto = "Right Gear";
 	final String shootingAuto = "Shooting";
+	final String nothingAuto = "Do Nothing";
+	final String forwardAuto = "Move Forward";
 	String autoSelected;
 	SendableChooser<String> chooser = new SendableChooser<>();
+	SendableChooser<String> controllerChooser = new SendableChooser<>();
 
 	Shooter shooter;
 	BallPickup ballPickup;
@@ -56,7 +60,12 @@ public class Robot extends IterativeRobot {
 		chooser.addObject("Left Gear", leftGearAuto);
 		chooser.addObject("Right Gear", rightGearAuto);
 		chooser.addObject("Shooting", shootingAuto);
+		chooser.addObject("Do Nothing", nothingAuto);
+		chooser.addObject("Move Forward (pass base line)", forwardAuto);
 		SmartDashboard.putData("Auto choices", chooser);
+		
+		controllerChooser.addDefault("primary", "primary");
+		controllerChooser.addObject("secondary", "secondary");
 		
 		driveEncoder = new Encoder(8, 9, false, CounterBase.EncodingType.k2X); 
 		driveEncoder.setDistancePerPulse(0.014);
@@ -77,10 +86,11 @@ public class Robot extends IterativeRobot {
 		Encoder shooterEncoder = new Encoder(6, 7, false, CounterBase.EncodingType.k2X);
 		shooterEncoder.setDistancePerPulse(0.025);//1/40 (40 pulses per rotation)
 		shooterEncoder.setPIDSourceType(PIDSourceType.kRate);
-		shooter = new Shooter(new CANTalon(3), shooterEncoder, new Spark(0));
+		shooter = new Shooter(new CANTalon(3), shooterEncoder, new Spark(2));
 		shooter.setSpeedTolerance(20);
+		shooter.setRPM(2600); //make adjustable by smartdashboard?
 		ballPickup = new BallPickup(new CANTalon(1), new CANTalon(2));
-		gearDropper = new GearDropper(new Spark(1), new AnalogInput(1));
+		gearDropper = new GearDropper(new Spark(3), new AnalogInput(0));
 		climber = new Climber(new CANTalon(4));
 		
 		gearVision = new VisionServer("A");
@@ -90,7 +100,6 @@ public class Robot extends IterativeRobot {
 		
 		shooterToggle = new Toggle();
 
-		shooter.setRPM(5000); //make adjustable by smartdashboard?
 	}
 	
 	public void sendInfoToDashboard(){
@@ -98,10 +107,12 @@ public class Robot extends IterativeRobot {
 		SmartDashboard.putBoolean("Gear in sight", gearVision.targetFound());
 		SmartDashboard.putBoolean("Boiler in sight", boilerVision.targetFound());
 		SmartDashboard.putNumber("shooter RPM", shooter.getRPM());
+		SmartDashboard.putNumber("shooter RPS", shooter.getRPS());
 		SmartDashboard.putNumber("heading", visionController.getAbsoluteIMUAngle());
 		SmartDashboard.putNumber("drive dist", driveEncoder.getDistance());
 		SmartDashboard.putNumber("gear dropper potentiometer average", gearDropper.getAvgPotentiometerVal());
 		SmartDashboard.putNumber("gear dropper potentiometer", gearDropper.getPotentiometerVal());
+		SmartDashboard.putBoolean("isenabled", shooter.isEnabled());
 	}
 	
 
@@ -113,8 +124,11 @@ public class Robot extends IterativeRobot {
 	
 	@Override
 	public void teleopPeriodic() {
-		primaryControl();
-		//secondaryControl();
+		//if(controllerChooser.getSelected() == "primary"){
+			//primaryControl();
+		//}else{
+			secondaryControl();
+		//}
 		visionController.update();
 		sendInfoToDashboard();
 	}
@@ -144,9 +158,9 @@ public class Robot extends IterativeRobot {
 				visionController.search();
 			}
 			
-			double x = primaryController.getRawAxis(0);
+			double x = primaryController.getRawAxis(4);
 			double y = primaryController.getRawAxis(1);
-			double r = primaryController.getRawAxis(4);
+			double r = primaryController.getRawAxis(0) * 0.5;
 			if(Math.abs(x) < 0.1){
 				x = 0;
 			}
@@ -159,8 +173,6 @@ public class Robot extends IterativeRobot {
 			drive.mecanumDrive_Cartesian(x, y, r, 0);
 		}
 		
-		shooter.overrideShooter(primaryController.getRawAxis(3));	//RT
-		shooter.overrideElevator(-primaryController.getRawAxis(2));	//LT
 		
 		if(primaryController.getXButton()){
 			visionController.stopAll();
@@ -170,10 +182,10 @@ public class Robot extends IterativeRobot {
 			shooterToggle.toggle();
 		}
 		
-		if (shooterToggle.getStatus() && !shooter.isEnabled()){
+		if (primaryController.getAButton() && !shooter.isEnabled()){
 			shooter.enable();
 		}
-		else if (shooterToggle.getStatus() && shooter.isEnabled()){
+		else if (!primaryController.getAButton() && shooter.isEnabled()){
 			shooter.disable();
 		}
 		shooter.elevate();
@@ -182,15 +194,47 @@ public class Robot extends IterativeRobot {
 		
 		gearDropper.open(primaryController.getYButton());
 		
-		ballPickup.set(primaryController.getBButton());
+		ballPickup.set(primaryController.getBButton(), primaryController.getBackButton());
+		
 	}
 	
 	public void secondaryControl(){
-		shooter.overrideShooter(secondaryController.getRawAxis(3));		//RT
-		shooter.overrideElevator(-secondaryController.getRawAxis(2));	//LT
-		gearDropper.override(-secondaryController.getRawAxis(1));		//LY
+		
+		//CAMERA LIGHTS
+		if(secondaryController.getRawButton(2))					//b
+			visionController.turnOnLights(Value.kForward);
+		else if(secondaryController.getRawButton(3))			//x
+			visionController.turnOnLights(Value.kReverse);
+		else
+			visionController.turnOnLights(Value.kOff);
+		
+		//GEAR DROPPER
+		if(secondaryController.getRawButton(5)){					//L1
+			gearDropper.open(secondaryController.getRawButton(6));	//R1
+		}
+		
+		double RT = secondaryController.getRawAxis(3);
+		double LT = secondaryController.getRawAxis(2);
+		double LY = secondaryController.getRawAxis(1);
+		double RY = secondaryController.getRawAxis(5);
+		if(Math.abs(RT) > 0.1)
+			shooter.overrideShooter(RT);		//RT
+		else
+			shooter.overrideShooter(0);
+		if(Math.abs(LT) > 0.1)
+			shooter.overrideElevator(-LT);	//LT
+		else
+			shooter.overrideElevator(0);
+		if(Math.abs(LY) > 0.1)
+			gearDropper.set(-LY);									
+		else
+			gearDropper.set(0);
+		if(Math.abs(RY) > 0.1)
+			ballPickup.set(RY);				//RY (two motors)
+		else
+			ballPickup.set(0);
+		
 		climber.climb(secondaryController.getYButton(), secondaryController.getAButton());
-		ballPickup.set(secondaryController.getRawAxis(5));				//RY (two motors)
 	}
 	
 	@Override
@@ -215,6 +259,16 @@ public class Robot extends IterativeRobot {
 		
 		switch (autoSelected) {
 		
+		case nothingAuto:
+			break;
+		
+		case forwardAuto:
+			if(driveEncoder.getDistance() < 84){
+				drive.mecanumDrive_Cartesian(0, 0.75, 0, 0);
+			}
+			else{
+				drive.mecanumDrive_Cartesian(0, 0, 0, 0);
+			}
 		case shootingAuto:
 
 			//flips heading to counter-clockwise when starting from other side of field

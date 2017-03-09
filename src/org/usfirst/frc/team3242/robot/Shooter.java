@@ -27,7 +27,7 @@ public class Shooter {
 	private Encoder encoder;
 	private double rps; // is RPS instead of RPM, because encoder returns in distance per second. Setters and getter are 
 						// converted to and from RPM for easier human input and reading
-	private final double maxRPS = 5310;
+	private final double maxRPS = 40;
 	private PIDController pid;
 	private double speedTolerance; // in percentages
 
@@ -46,7 +46,7 @@ public class Shooter {
 		pid = new PIDController(0.7, 0.01, 0, 1 / maxRPS, encoder, shooter); //need to configure PID values
 		pid.setInputRange(-maxRPS, maxRPS); //need to test
 		pid.setOutputRange(-100, 100);
-		speedTolerance = 5;
+		speedTolerance = 0.1;
 		pid.setPercentTolerance(speedTolerance);
 		elevatorTimer = new Timer();
 		elevatorTimer.start();
@@ -85,6 +85,10 @@ public class Shooter {
 		return encoder.getRate() * 60;
 	}
 	
+	public double getRPS(){
+		return encoder.getRate();
+	}
+	
 	/**
 	 * @return the speedTolerance (percent)
 	 */
@@ -106,7 +110,7 @@ public class Shooter {
 	 */
 	public void elevate(){
 		if (isEnabled && (pid.onTarget() || elevatorTimer.get() > elevatorDelay)){ //calibrate range
-			elevator.set(0.75); //need to test
+			elevator.set(-0.4); //need to test
 		}
 		else{
 			elevator.set(0);

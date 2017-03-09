@@ -6,11 +6,14 @@ public class BallPickup{
 	
 	private CANTalon pickup;
 	private CANTalon elevator;
-	private final double speed = 0.5;
+	private final double speed = 0.34;
+	private final double speedEleScalar = 1.75;
 	
 	public BallPickup(CANTalon pickup, CANTalon elevator){
 		this.pickup = pickup;
 		this.elevator = elevator;
+		this.elevator.setInverted(true);
+		this.pickup.setInverted(true);
 	}
 	
 	public void set(boolean enable){
@@ -29,7 +32,7 @@ public class BallPickup{
 	
 	public void set(double s){
 		pickup.set(s);
-		elevator.set(s);
+		elevator.set(s * speedEleScalar);
 	}
 }
 

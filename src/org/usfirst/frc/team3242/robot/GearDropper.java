@@ -6,9 +6,9 @@ import edu.wpi.first.wpilibj.Spark;
 public class GearDropper {
 	private Spark dropperActuator;
 	private AnalogInput potentiometer;
-	private final double maxVal = 0;
-	private final double minVal = 13;
-	private final double speed = 0.8;
+	private final double maxVal = 1.9;//2.1618
+	private final double minVal = 1.7;//1.545
+	private final double speed = 0.3;
 	
 	public GearDropper(Spark actuator, AnalogInput pot){
 		this.dropperActuator = actuator;
@@ -23,25 +23,28 @@ public class GearDropper {
 		return potentiometer.getVoltage();
 	}
 	
-	public void override(boolean extend, boolean retract){
+	public void set(double s){
+		if(Math.abs(s) > 0.1)
+			dropperActuator.set(s*0.5);
+	}
+	
+	public void set(boolean extend, boolean retract){
 		if(extend){
-			override(speed);
+			set(-speed);
 		}else if(retract){
-			override(-speed);
+			set(speed);
 		}else{
-			override(0);
+			set(0);
 		}
 	}
 	
-	public void override(double s){
-		dropperActuator.set(s);
-	}
-	
 	public void open(boolean open){
-		if(open && potentiometer.getValue() < maxVal){
-			dropperActuator.set(speed);
-		}else if(potentiometer.getValue() > minVal){
-			dropperActuator.set(-speed);
+		if(open && potentiometer.getValue() > minVal){
+			set(false, true);//retract
+		}else if(potentiometer.getValue() < maxVal){
+			set(true, false);//extend
+		}else{
+			set(false, false);
 		}
 	}
 	
