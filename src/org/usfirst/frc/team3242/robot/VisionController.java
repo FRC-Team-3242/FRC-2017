@@ -187,7 +187,7 @@ public class VisionController {
 		if(autoState >= 100 && autoState < 200){
 			if(!boilerVision.targetFound()){
 				stopAll();
-				//check last known position of target
+				//check last known position of target         
 				if(gearVision.getX() > xMax / 2){
 					r = 0.1;
 				}else{

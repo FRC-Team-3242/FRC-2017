@@ -90,7 +90,7 @@ public class Robot extends IterativeRobot {
 		shooter.setSpeedTolerance(20);
 		shooter.setRPM(2040); //make adjustable by smartdashboard?
 		ballPickup = new BallPickup(new CANTalon(1), new CANTalon(2));
-		gearDropper = new GearDropper(new Spark(3), new AnalogInput(0));
+		gearDropper = new GearDropper(new Spark(4), new AnalogInput(0));
 		climber = new Climber(new CANTalon(4));
 		
 		gearVision = new VisionServer("A");
@@ -120,15 +120,16 @@ public class Robot extends IterativeRobot {
 	@Override
 	public void teleopInit(){
 		visionController.stopAll();
+		visionController.search();
 		shooter.disable();
 	}
 	
 	@Override
 	public void teleopPeriodic() {
 		//if(controllerChooser.getSelected() == "primary"){
-			//primaryControl();
+			primaryControl();
 		//}else{
-			secondaryControl();
+			//secondaryControl();
 		//}
 		visionController.update();
 		sendInfoToDashboard();
@@ -190,7 +191,7 @@ public class Robot extends IterativeRobot {
 		
 		climber.climb(primaryController.getPOV() == 0, primaryController.getPOV() == 180);//up, down
 		
-		//gearDropper.open(primaryController.getYButton());
+		gearDropper.open(primaryController.getYButton());
 		
 		
 		ballPickupToggle.toggle(primaryController.getBButton());
@@ -198,15 +199,14 @@ public class Robot extends IterativeRobot {
 	}
 	
 	public void secondaryControl(){
-		//GEAR DROPPER AUTO
-		if(secondaryController.getRawButton(5)){					//L1
-			gearDropper.open(secondaryController.getRawButton(6));	//R1
-		}
 		
 		double RT = secondaryController.getRawAxis(3);
 		double LT = secondaryController.getRawAxis(2);
 		double LY = secondaryController.getRawAxis(1);
 		double RY = secondaryController.getRawAxis(5);
+		
+		//ANGLE FINDER
+		
 		
 		//SHOOTER []
 		if(Math.abs(RT) > 0.1)
@@ -219,12 +219,15 @@ public class Robot extends IterativeRobot {
 			shooter.overrideElevator(-LT);	//LT
 		else
 			shooter.overrideElevator(0);
+
 		
-		//GEAR DROPPER MANUAL
-		if(Math.abs(LY) > 0.1)
-			gearDropper.set(-LY);									
-		else
-			gearDropper.set(0);
+		if(secondaryController.getRawButton(5)){					//L1
+			//GEAR DROPPER AUTO
+			gearDropper.open(secondaryController.getRawButton(6));	//R1
+		}else{
+			//GEAR DROPPER MANUAL
+			gearDropper.set(secondaryController.getAButton(), secondaryController.getYButton());
+		}
 		
 		//BALL PICKUP
 		if(Math.abs(RY) > 0.1)
@@ -233,7 +236,7 @@ public class Robot extends IterativeRobot {
 			ballPickup.set(0);
 		
 		//CLIMBER
-		climber.climb(secondaryController.getYButton(), secondaryController.getAButton());
+		//climber.climb(secondaryController.getYButton(), secondaryController.getAButton());
 	}
 	
 	@Override

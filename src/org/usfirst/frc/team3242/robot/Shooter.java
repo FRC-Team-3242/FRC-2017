@@ -111,7 +111,7 @@ public class Shooter {
 	 */
 	public void elevate(){
 		if (isEnabled && (pid.onTarget() || elevatorTimer.get() > elevatorDelay)){ //calibrate range
-			elevator.set(-0.4); //need to test
+			elevator.set(-0.25); //need to test
 		}
 		else{
 			elevator.set(0);
