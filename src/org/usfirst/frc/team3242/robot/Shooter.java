@@ -31,6 +31,7 @@ public class Shooter {
 	private final double maxRPS = maxRPM*60;
 	private PIDController pid;
 	private double speedTolerance; // in percentages
+	private final double elevatorSpeed = 0.35;
 
 	/**
 	 * 
@@ -111,7 +112,7 @@ public class Shooter {
 	 */
 	public void elevate(){
 		if (isEnabled && (pid.onTarget() || elevatorTimer.get() > elevatorDelay)){ //calibrate range
-			elevator.set(-0.25); //need to test
+			elevator.set(-elevatorSpeed); //need to test
 		}
 		else{
 			elevator.set(0);

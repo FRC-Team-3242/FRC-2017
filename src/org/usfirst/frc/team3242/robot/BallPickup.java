@@ -6,8 +6,9 @@ public class BallPickup{
 	
 	private CANTalon pickup;
 	private CANTalon elevator;
-	private final double speed = 0.34;
+	private final double speed = 0.37;
 	private final double speedEleScalar = 1.75;
+	private final double reverseSpeed = 0.7;
 	
 	public BallPickup(CANTalon pickup, CANTalon elevator){
 		this.pickup = pickup;
@@ -24,7 +25,7 @@ public class BallPickup{
 		if(up){
 			set(speed);
 		}else if(down){
-			set(-speed);
+			set(-reverseSpeed);
 		}else{
 			set(0);
 		}

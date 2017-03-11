@@ -6,9 +6,9 @@ import edu.wpi.first.wpilibj.Spark;
 public class GearDropper {
 	private Spark dropperActuator;
 	private AnalogInput potentiometer;
-	private final double maxVal = 2.1;//2.1618
+	private final double maxVal = 2.0;//2.1618
 	private final double minVal = 1.3;//1.545
-	private final double speed = 0.5;
+	private final double speed = 1;
 	
 	public GearDropper(Spark actuator, AnalogInput pot){
 		this.dropperActuator = actuator;
