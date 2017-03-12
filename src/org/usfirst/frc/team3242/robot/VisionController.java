@@ -126,6 +126,11 @@ public class VisionController {
 		autoState = 200;
 	}
 	
+	public void startRopeTracking(){
+		angleController.enable();
+		autoState = 300;
+	}
+	
 	public void search(){
 		gearVision.enable();
 		boilerVision.enable();
@@ -275,7 +280,35 @@ public class VisionController {
 				stopAll();
 			}
 			break;
+
+		case(300):
+			//select nearest ideal angle
+			// note: need to figure out actual angles
+			currentAngle = getAbsoluteIMUAngle();
+			if (currentAngle < 210 && currentAngle > 150){
+				angleController.setSetpoint(angleA);
+			}
+			else if (currentAngle < 330 && currentAngle > 270){
+				angleController.setSetpoint(angleB);
+			}
+			else if (currentAngle < 90 && currentAngle > 30){
+				angleController.setSetpoint(angleC);
+			}
+			angleController.enable();
+			autoState = 301;
+			break;
+		case(301):
+			//adjust to nearest angle
+			if (angleController.onTarget()){
+				angleController.disable();
+				drive.mecanumDrive_Cartesian(0, 0, 0, 0);
+				xGearController.enable();
+				autoState = 102;
+			}
+			break;
 		}
+			
+			
 	}
 	
 	class VisionSourceX implements PIDSource{
