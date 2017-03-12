@@ -298,7 +298,7 @@ public class Robot extends IterativeRobot {
 				ballPickup.set(true, false);
 				shooter.enable();
 				shooter.elevate();
-				if(autoTimer.get() > 8){
+				if(autoTimer.get() > 6){//TODO
 					autoTimer.reset();
 					shooter.disable();
 					autoState++;
@@ -308,8 +308,9 @@ public class Robot extends IterativeRobot {
 				ballPickup.set(0);
 				shooter.disable();
 				shooter.elevate();
-				if(autoTimer.get() > 3){
-					drive.mecanumDrive_Cartesian(-0.65, 0, 0, 0);
+				drive.mecanumDrive_Cartesian(-0.65, 0, 0, 0);
+				if(autoTimer.get() > 4){//TODO
+					drive.mecanumDrive_Cartesian(0, 0, 0, 0);
 					autoState++;
 				}
 				break;
@@ -317,6 +318,8 @@ public class Robot extends IterativeRobot {
 				drive.mecanumDrive_Cartesian(0, 0, 0, 0);
 				break;
 			}
+			
+			break;
 			
 		case shootingAuto:
 
@@ -392,7 +395,7 @@ public class Robot extends IterativeRobot {
 				break;
 				
 			}
-			
+			break;
 			
 		case rightGearAuto:
 			switch (autoState){
@@ -448,6 +451,7 @@ public class Robot extends IterativeRobot {
 				// to_do: use auto gear placing function
 				break;
 			}
+			break;
 		case leftGearAuto:
 			//go forward 78.5 inches
 		switch (autoState){
@@ -484,6 +488,7 @@ public class Robot extends IterativeRobot {
 				visionController.update();
 				break;		
 		}
+		break;
 		case dumbFrontGearAuto:
 			switch (autoState){
 			
@@ -539,6 +544,7 @@ public class Robot extends IterativeRobot {
 					//
 					break;
 				}
+				break;
 		}
 	}
 	
