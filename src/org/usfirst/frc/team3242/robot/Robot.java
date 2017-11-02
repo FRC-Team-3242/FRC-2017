@@ -26,7 +26,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 /**
  * If you change the name of this class or the package after
  * creating this project, you must also update the manifest file in the resource
- * directory.	
+ * directory.
  */
 public class Robot extends IterativeRobot {
 	final String frontGearAuto = "Front Gear";
@@ -40,30 +40,42 @@ public class Robot extends IterativeRobot {
 	String autoSelected;
 	SendableChooser<String> chooser = new SendableChooser<>();
 	SendableChooser<String> controllerChooser = new SendableChooser<>();
-	
-	Shooter shooter;
-	BallPickup ballPickup;
-	GearDropper gearDropper;
-	Climber climber;
-	Toggle shooterToggle, ballPickupToggle;
-	XboxController primaryController;
-	XboxController secondaryController;
-	VisionServer gearVision, boilerVision;
-	CameraServer displayVision;
-	VisionController visionController;
-	Encoder driveEncoder;
-	RobotDrive drive;
-	PigeonImu.GeneralStatus genStatus;
-	PIDController angleController;
+
+	private Shooter shooter;
+	private BallPickup ballPickup;
+	private GearDropper gearDropper;
+	private Climber climber;
+	private Toggle shooterToggle, ballPickupToggle;
+	private XboxController primaryController;
+	private XboxController secondaryController;
+	private VisionServer gearVision, boilerVision;
+	private CameraServer displayVision;
+	private VisionController visionController;
+	private Encoder driveEncoder;
+	private RobotDrive drive;
+	private PigeonImu.GeneralStatus genStatus;
+	private PIDController angleController;
 	int turnScalar;
 	int autoState;
-	Timer autoTimer;
+	private Timer autoTimer;
 	final private double autoSpeed = 0.5;
 	final private double autoTurnSpeed = 0.5;
 
-	
+
 	@Override
 	public void robotInit() {
+		this.setupSmartDashBoard();
+		this.initializeObjects();
+
+		//sets up direct camera stream through USB
+		UsbCamera cam = displayVision.startAutomaticCapture();
+		cam.setResolution(320, 240);
+		cam.setFPS(15);
+
+
+	}
+
+	private void setupSmartDashBoard(){
 		chooser.addObject("Front Gear", frontGearAuto);
 		chooser.addObject("Dumb Front Gear", dumbFrontGearAuto);
 		chooser.addObject("Left Gear", leftGearAuto);
@@ -73,54 +85,58 @@ public class Robot extends IterativeRobot {
 		chooser.addObject("Move Forward (pass base line)", forwardAuto);
 		chooser.addObject("shoot then strafe", shootThenStrafeAuto);
 		SmartDashboard.putData("Auto choices", chooser);
-		
+
 		controllerChooser.addDefault("primary", "primary");
 		controllerChooser.addObject("secondary", "secondary");
-		
+	}
+
+	/**
+	 * Initializes objects and does some setup for them
+	 */
+	private void initializeObjects(){
 		//only using one channel, so distance per pulse is / by 2
-		driveEncoder = new Encoder(8, 9, false, CounterBase.EncodingType.k2X); 
+		driveEncoder = new Encoder(8, 9, false, CounterBase.EncodingType.k2X);
 		driveEncoder.setDistancePerPulse(18.0/ (1440.0 / 2.0));
-		
+
 		drive = new RobotDrive(new CANTalon(8), new CANTalon(5), new CANTalon(7), new CANTalon(6));
 		drive.setInvertedMotor(MotorType.kFrontLeft, true);
 		drive.setInvertedMotor(MotorType.kRearLeft, true);
-		
+
 		PigeonImu imu = new PigeonImu(9);
-		
+
 		angleController = new PIDController(0.8, 0.01,0,new PIDHeadingInput(imu),
 				(num) -> {drive.mecanumDrive_Cartesian(0, 0, num, 0);});
 		angleController.setInputRange(0, 360);
 		angleController.setPercentTolerance(1);
 		angleController.setContinuous();
+
 		primaryController = new XboxController(1);
 		secondaryController = new XboxController(2);
+
 		Encoder shooterEncoder = new Encoder(6, 7, false, CounterBase.EncodingType.k2X);
 		shooterEncoder.setDistancePerPulse(0.025);//1/40 (40 pulses per rotation)
 		shooterEncoder.setPIDSourceType(PIDSourceType.kRate);
+
 		shooter = new Shooter(new CANTalon(3), shooterEncoder, new Spark(2));
 		shooter.setSpeedTolerance(20);
 		shooter.setRPM(2040); //make adjustable by smartdashboard?
+
 		ballPickup = new BallPickup(new CANTalon(1), new CANTalon(2));
 		gearDropper = new GearDropper(new Spark(4), new AnalogInput(0));
 		climber = new Climber(new CANTalon(4));
-		
-		displayVision = CameraServer.getInstance();
-		
-		UsbCamera cam = displayVision.startAutomaticCapture();
-		cam.setResolution(320, 240);
-		cam.setFPS(15);
-		
+
 		gearVision = new VisionServer("A");
 		boilerVision = new VisionServer("B");
 		visionController = new VisionController(gearVision, boilerVision, drive,
 				imu, new Relay(3));
-		
+
+		displayVision = CameraServer.getInstance();
+
 		shooterToggle = new Toggle();
 		ballPickupToggle = new Toggle();
 		autoTimer = new Timer();
 		autoTimer.start();
 	}
-	
 	public void sendInfoToDashboard(){
 		SmartDashboard.putBoolean("Gear in sight", gearVision.targetFound());
 		SmartDashboard.putBoolean("Boiler in sight", boilerVision.targetFound());
@@ -132,7 +148,7 @@ public class Robot extends IterativeRobot {
 		SmartDashboard.putNumber("gear dropper potentiometer", gearDropper.getPotentiometerVal());
 		SmartDashboard.putBoolean("isenabled", shooter.isEnabled());
 	}
-	
+
 
 	@Override
 	public void teleopInit(){
@@ -140,7 +156,7 @@ public class Robot extends IterativeRobot {
 		visionController.search();
 		shooter.disable();
 	}
-	
+
 	@Override
 	public void teleopPeriodic() {
 		//if(controllerChooser.getSelected() == "primary"){
@@ -153,15 +169,15 @@ public class Robot extends IterativeRobot {
 	}
 
 	/**
-	 * TODO 
+	 * TODO
 	 * LTrigger:		manually control shooter elevator
 	 * RTrigger:		manually control shooter
-	 * 
+	 *
 	 * LBumper:			boiler vision tracking
 	 * RBumper:			lift vision tracking
 	 * start button:	search for targets
 	 * X:				stop all vision tracking
-	 * 
+	 *
 	 * A:				toggle shooter
 	 * B:				run ball pick up
 	 * Y:				drop gear
@@ -177,7 +193,7 @@ public class Robot extends IterativeRobot {
 			if(primaryController.getStartButton()){
 				//visionController.search();
 			}
-			
+
 			double x = primaryController.getRawAxis(4);
 			double y = primaryController.getRawAxis(1) * 0.85;
 			double r = primaryController.getRawAxis(0) * 0.5;
@@ -192,53 +208,53 @@ public class Robot extends IterativeRobot {
 			}
 			drive.mecanumDrive_Cartesian(x, y, r, 0);
 		}
-		
-		
+
+
 		if(primaryController.getXButton()){
 			//visionController.stopAll();
 		}
-		
+
 		shooterToggle.toggle(primaryController.getAButton());
 		if (primaryController.getAButton() && !shooter.isEnabled()){
 			shooter.enable();
 		}else if(!primaryController.getAButton() && shooter.isEnabled()){
 			shooter.disable();
 		}
-		
+
 		shooter.elevate();
-		
+
 		climber.climb(primaryController.getPOV() == 0, primaryController.getPOV() == 180);//up, down
-		
+
 		gearDropper.open(primaryController.getYButton());
-		
-		
+
+
 		ballPickupToggle.toggle(primaryController.getBButton());
 		ballPickup.set(ballPickupToggle.getStatus(), primaryController.getXButton());
 	}
-	
+
 	public void secondaryControl(){
-		
+
 		double RT = secondaryController.getRawAxis(3);
 		double LT = secondaryController.getRawAxis(2);
 		double LY = secondaryController.getRawAxis(1);
 		double RY = secondaryController.getRawAxis(5);
-		
+
 		//ANGLE FINDER
-		
-		
+
+
 		//SHOOTER []
 		if(Math.abs(RT) > 0.1)
 			shooter.overrideShooter(RT);		//RT
 		else
 			shooter.overrideShooter(0);
-		
+
 		//ELEVATOR SHOOTER
 		if(Math.abs(LT) > 0.1)
 			shooter.overrideElevator(-LT);	//LT
 		else
 			shooter.overrideElevator(0);
 
-		
+
 		if(secondaryController.getRawButton(5)){					//L1
 			//GEAR DROPPER AUTO
 			gearDropper.open(secondaryController.getRawButton(6));	//R1
@@ -246,17 +262,17 @@ public class Robot extends IterativeRobot {
 			//GEAR DROPPER MANUAL
 			gearDropper.set(secondaryController.getAButton(), secondaryController.getYButton());
 		}
-		
+
 		//BALL PICKUP
 		if(Math.abs(RY) > 0.1)
 			ballPickup.set(RY);				//RY (two motors)
 		else
 			ballPickup.set(0);
-		
+
 		//CLIMBER
 		//climber.climb(secondaryController.getYButton(), secondaryController.getAButton());
 	}
-	
+
 	@Override
 	public void autonomousInit() {
 		autoSelected = chooser.getSelected();
@@ -264,7 +280,7 @@ public class Robot extends IterativeRobot {
 		// defaultAuto);
 		autoTimer.reset();
 		System.out.println("Auto selected: " + autoSelected);
-		if(autoSelected.equals(shootingAuto) && 
+		if(autoSelected.equals(shootingAuto) &&
 				DriverStation.getInstance().getAlliance() == Alliance.Blue){
 			turnScalar = -1;
 		}else{
@@ -276,13 +292,13 @@ public class Robot extends IterativeRobot {
 	@Override
 	public void autonomousPeriodic() {
 		double currentAngle = visionController.getAbsoluteIMUAngle();
-		
-		
+
+
 		switch (autoSelected) {
-		
+
 		case nothingAuto:
 			break;
-		
+
 		case forwardAuto:
 			if(driveEncoder.getDistance() < 84){//84 when fix dist per pulse
 				drive.mecanumDrive_Cartesian(0, -autoSpeed, 0, 0);
@@ -291,7 +307,7 @@ public class Robot extends IterativeRobot {
 				drive.mecanumDrive_Cartesian(0, 0, 0, 0);
 			}
 			break;
-			
+
 		case shootThenStrafeAuto:
 			switch(autoState){
 			case 0:
@@ -318,18 +334,18 @@ public class Robot extends IterativeRobot {
 				drive.mecanumDrive_Cartesian(0, 0, 0, 0);
 				break;
 			}
-			
+
 			break;
-			
+
 		case shootingAuto:
 
 			//flips heading to counter-clockwise when starting from other side of field
 			if (DriverStation.getInstance().getAlliance() == Alliance.Blue){
 				currentAngle = (360 - currentAngle) % 360;
 			}
-			
+
 			switch (autoState){
-			
+
 			case 0:
 				if (driveEncoder.getDistance() < 12){
 					drive.mecanumDrive_Cartesian(0, -autoSpeed, 0, 0);
@@ -338,7 +354,7 @@ public class Robot extends IterativeRobot {
 					autoState++;
 				}
 				break;
-				
+
 			case 1:
 				if (currentAngle  < 45){
 					drive.mecanumDrive_Cartesian(0, 0, -autoTurnSpeed * turnScalar, 0);
@@ -393,15 +409,15 @@ public class Robot extends IterativeRobot {
 					autoState--;
 				}
 				break;
-				
+
 			}
 			break;
-			
+
 		case rightGearAuto:
 			switch (autoState){
 			case 0:
 				//go forward 12 inches
-				if (driveEncoder.getDistance() < 12){ 
+				if (driveEncoder.getDistance() < 12){
 					drive.mecanumDrive_Cartesian(0, -autoSpeed, 0, 0); // go forward at 75% speed
 				}
 				else{
@@ -456,7 +472,7 @@ public class Robot extends IterativeRobot {
 			//go forward 78.5 inches
 		switch (autoState){
 			case 0:
-				if (driveEncoder.getDistance() < 78.5){ 
+				if (driveEncoder.getDistance() < 78.5){
 					drive.mecanumDrive_Cartesian(0, -autoSpeed, 0, 0); // go forward at 75% speed
 				}
 				else{
@@ -486,12 +502,12 @@ public class Robot extends IterativeRobot {
 				break;
 			case 4:
 				visionController.update();
-				break;		
+				break;
 		}
 		break;
 		case dumbFrontGearAuto:
 			switch (autoState){
-			
+
 			case 0:
 				// 1. Move forward
 				if (driveEncoder.getDistance() < 51){ // The distance to go forward
@@ -524,7 +540,7 @@ public class Robot extends IterativeRobot {
 			break;
 		case frontGearAuto:
 				switch (autoState){
-				
+
 				case 0:
 					// 1. Move forward
 					if (driveEncoder.getDistance() < 68){ // The distance to go forward
@@ -547,10 +563,11 @@ public class Robot extends IterativeRobot {
 				break;
 		}
 	}
-	
+
 	@Override
 	public void testPeriodic() {
-		
+
 	}
+
 }
 
