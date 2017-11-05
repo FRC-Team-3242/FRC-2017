@@ -174,9 +174,9 @@ public class Robot extends IterativeRobot {
 	 * RTrigger:		manually control shooter
 	 *
 	 * LBumper:			boiler vision tracking
-	 * RBumper:			lift vision tracking
+	 * RBumper:			rotates to 90 degrees
 	 * start button:	search for targets
-	 * X:				stop all vision tracking
+	 * X:				rotates ball pickup in reverse (for unsticking)
 	 *
 	 * A:				toggle shooter
 	 * B:				run ball pick up
@@ -210,8 +210,15 @@ public class Robot extends IterativeRobot {
 		}
 
 
-		if(primaryController.getXButton()){
-			//visionController.stopAll();
+		//enables autorotate (with pidcontroller) to 90 degrees angle 
+		if(primaryController.getBumper(Hand.kRight)){
+			if(!angleController.isEnabled()){
+				angleController.enable();
+				angleController.setSetpoint(90);
+			}
+			else{
+				angleController.disable();
+			}
 		}
 
 		shooterToggle.toggle(primaryController.getAButton());
