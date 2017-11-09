@@ -182,31 +182,19 @@ public class Robot extends IterativeRobot {
 	 * B:				run ball pick up
 	 * Y:				drop gear
 	 */
-	public void primaryControl(){
-		if(visionController.getAutoState() == 0){
-			if(primaryController.getBumper(Hand.kLeft)){
-				//visionController.startBoilerTracking();
-			}
-			if(primaryController.getBumper(Hand.kRight)){
-				//visionController.startLiftTracking();
-			}
-			if(primaryController.getStartButton()){
-				//visionController.search();
-			}
+public void primaryControl(){
 
-			double x = primaryController.getRawAxis(4);
-			double y = primaryController.getRawAxis(1) * 0.85;
-			double r = primaryController.getRawAxis(0) * 0.5;
-			if(Math.abs(x) < 0.1){
-				x = 0;
-			}
-			if(Math.abs(y) < 0.1){
-				y = 0;
-			}
-			if(Math.abs(r) < 0.1){
-				r = 0;
-			}
-			drive.mecanumDrive_Cartesian(x, y, r, 0);
+		double x = primaryController.getRawAxis(4);
+		double y = primaryController.getRawAxis(1) * 0.85;
+		double r = primaryController.getRawAxis(0) * 0.5;
+		if(Math.abs(x) < 0.1){
+			x = 0;
+		}
+		if(Math.abs(y) < 0.1){
+			y = 0;
+		}
+		if(Math.abs(r) < 0.1){
+			r = 0;
 		}
 
 
@@ -219,6 +207,12 @@ public class Robot extends IterativeRobot {
 			else{
 				angleController.disable();
 			}
+		}
+		if(primaryController.getBumper(Hand.kLeft)){
+			if(visionController.getAbsoluteIMUAngle() < 90){
+				r = 0.5;
+			}
+
 		}
 
 		shooterToggle.toggle(primaryController.getAButton());
@@ -237,6 +231,7 @@ public class Robot extends IterativeRobot {
 
 		ballPickupToggle.toggle(primaryController.getBButton());
 		ballPickup.set(ballPickupToggle.getStatus(), primaryController.getXButton());
+		drive.mecanumDrive_Cartesian(x, y, r, 0);
 	}
 
 	public void secondaryControl(){
