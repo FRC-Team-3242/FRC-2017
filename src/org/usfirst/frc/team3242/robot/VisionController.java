@@ -1,6 +1,6 @@
 package org.usfirst.frc.team3242.robot;
 
-import com.ctre.PigeonImu;
+import com.ctre.phoenix.sensors.PigeonIMU;
 
 import edu.wpi.first.wpilibj.PIDController;
 import edu.wpi.first.wpilibj.PIDSource;
@@ -8,12 +8,12 @@ import edu.wpi.first.wpilibj.PIDSourceType;
 import edu.wpi.first.wpilibj.Relay;
 import edu.wpi.first.wpilibj.Relay.Direction;
 import edu.wpi.first.wpilibj.Relay.Value;
-import edu.wpi.first.wpilibj.RobotDrive;
+import edu.wpi.first.wpilibj.drive.MecanumDrive;
 import edu.wpi.first.wpilibj.Timer;
 
 public class VisionController {
 	
-	private RobotDrive drive;
+	private MecanumDrive drive;
 	private PIDController angleController;
 	
 	//camera resolution
@@ -53,12 +53,12 @@ public class VisionController {
 	private Timer autoTimer;
 	int turningDirection;
 	double currentAngle;
-	PigeonImu imu;
+	PigeonIMU imu;
 	VisionServer boilerVision;
 	VisionServer gearVision;
 	
 	public VisionController(VisionServer gearVision, VisionServer boilerVision,
-			RobotDrive drive, PigeonImu imu, Relay lights){
+			MecanumDrive drive, PigeonIMU imu, Relay lights){
 		this.drive = drive;
 		autoState = 0;
 		autoTimer = new Timer();
@@ -104,7 +104,7 @@ public class VisionController {
 	
 	public double getAbsoluteIMUAngle(){
 		double[] ypr = new double[3];
-		imu.GetYawPitchRoll(ypr);
+		imu.getYawPitchRoll(ypr);
 		double direction = Math.signum(ypr[0]);
 		double yaw = Math.abs(ypr[0]) % 360.0;// -90 + 360
 		if(direction < 0){
@@ -186,7 +186,7 @@ public class VisionController {
 		boilerVision.update();
 		//this allows multiple PID loops to run simultaneously
 		if(autoState != 0){
-			drive.mecanumDrive_Cartesian(x, y, r, 0);
+			drive.driveCartesian(x, y, r, 0);
 		}
 		//check if boiler target was lost
 		if(autoState >= 100 && autoState < 200){
@@ -250,7 +250,7 @@ public class VisionController {
 		case(101):
 			//adjust to nearest angle
 			if (angleController.onTarget()){
-				drive.mecanumDrive_Cartesian(0, 0, 0, 0);
+				drive.driveCartesian(0, 0, 0, 0);
 				xGearController.enable();
 				yGearController.enable();
 				autoState = 103;
@@ -259,7 +259,7 @@ public class VisionController {
 		case(102):
 			//wait to adjust to optimal x and y value for lift, while maintaining angle
 			if(linedUpToLift()){
-				drive.mecanumDrive_Cartesian(0, 0, 0, 0);
+				drive.driveCartesian(0, 0, 0, 0);
 				stopAll();
 			}
 			
@@ -276,7 +276,7 @@ public class VisionController {
 			if(linedUpToBoiler()){
 				//done
 				yBoilerController.disable();
-				drive.mecanumDrive_Cartesian(0, 0, 0, 0);
+				drive.driveCartesian(0, 0, 0, 0);
 				stopAll();
 			}
 			break;
@@ -301,7 +301,7 @@ public class VisionController {
 			//adjust to nearest angle
 			if (angleController.onTarget()){
 				angleController.disable();
-				drive.mecanumDrive_Cartesian(0, 0, 0, 0);
+				drive.driveCartesian(0, 0, 0, 0);
 				xGearController.enable();
 				autoState = 102;
 			}

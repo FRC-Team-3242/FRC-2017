@@ -1,16 +1,16 @@
 package org.usfirst.frc.team3242.robot;
 
-import com.ctre.CANTalon;
+import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 
 public class BallPickup{
 	
-	private CANTalon pickup;
-	private CANTalon elevator;
+	private WPI_TalonSRX pickup;
+	private WPI_TalonSRX elevator;
 	private final double speed = 0.39;
 	private final double speedEleScalar = 1.75;
 	private final double reverseSpeed = 0.5;
 	
-	public BallPickup(CANTalon pickup, CANTalon elevator){
+	public BallPickup(WPI_TalonSRX pickup, WPI_TalonSRX elevator){
 		this.pickup = pickup;
 		this.elevator = elevator;
 		this.elevator.setInverted(true);

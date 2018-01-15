@@ -3,7 +3,7 @@
  */
 package org.usfirst.frc.team3242.robot;
 
-import com.ctre.CANTalon;
+import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.PIDController;
@@ -20,7 +20,7 @@ import edu.wpi.first.wpilibj.Timer;
  */
 public class Shooter {
 	private boolean isEnabled;
-	private CANTalon shooter;
+	private WPI_TalonSRX shooter;
 	private Spark elevator;
 	private Timer elevatorTimer;
 	private final double elevatorDelay = 1.5;
@@ -39,7 +39,7 @@ public class Shooter {
 	 * @param encoder Encoder for shooter speed
 	 * @param elevator shooter's elevator in the hopper
 	 */
-	public Shooter(CANTalon shooter, Encoder encoder, Spark elevator) {
+	public Shooter(WPI_TalonSRX shooter, Encoder encoder, Spark elevator) {
 		this.encoder = encoder;
 		this.shooter = shooter;
 		this.elevator = elevator;

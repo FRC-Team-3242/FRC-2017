@@ -1,15 +1,15 @@
 package org.usfirst.frc.team3242.robot;
 
-import com.ctre.PigeonImu;
+import com.ctre.phoenix.sensors.PigeonIMU;
 
 import edu.wpi.first.wpilibj.PIDSource;
 import edu.wpi.first.wpilibj.PIDSourceType;
 
 public class PIDHeadingInput implements PIDSource {
 
-	PigeonImu imu;
+	PigeonIMU imu;
 	
-	public PIDHeadingInput(PigeonImu imu){
+	public PIDHeadingInput(PigeonIMU imu){
 		this.imu	= imu;
 	}
 	
@@ -30,7 +30,7 @@ public class PIDHeadingInput implements PIDSource {
 		
 		//get absolute value of heading [0,360)
 		double[] ypr = new double[3];
-		imu.GetYawPitchRoll(ypr);
+		imu.getYawPitchRoll(ypr);
 		double direction = Math.signum(ypr[0]);
 		double yaw = Math.abs(ypr[0]) % 360.0;// -90 + 360 = 270
 		if(direction < 0){

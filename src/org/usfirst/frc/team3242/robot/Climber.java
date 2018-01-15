@@ -1,11 +1,11 @@
 package org.usfirst.frc.team3242.robot;
 
-import com.ctre.CANTalon;
+import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 
 public class Climber {
 	private final double speed = 1;
-	private CANTalon climberMotor;
-	public Climber(CANTalon climb){
+	private WPI_TalonSRX climberMotor;
+	public Climber(WPI_TalonSRX climb){
 		this.climberMotor = climb;
 	}
 	public void climb(boolean climb, boolean reverse){
