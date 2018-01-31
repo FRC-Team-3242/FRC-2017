@@ -59,6 +59,7 @@ public class Robot extends IterativeRobot {
 	private Timer autoTimer;
 	final private double autoSpeed = 0.5;
 	final private double autoTurnSpeed = 0.5;
+	private LEDs leds;
 
 
 	@Override
@@ -133,6 +134,10 @@ public class Robot extends IterativeRobot {
 		ballPickupToggle = new Toggle();
 		autoTimer = new Timer();
 		autoTimer.start();
+		
+		leds = new LEDs(new Spark(6));
+		
+		leds.setGlitterRainbow();
 	}
 	public void sendInfoToDashboard(){
 		SmartDashboard.putBoolean("Gear in sight", gearVision.targetFound());
